@@ -24,10 +24,10 @@ async function shareResult() {
 
   try {
     const canvas = await html2canvas(resultCard, {
-      backgroundColor: '#ffffff',  // FIX: was '#020408' (pure black) — use white or your actual card bg color
+      backgroundColor: '#020408',  // FIX: matches --bg-void from style.css (your actual dark background)
       scale: 2,                    // High-DPI for crisp image
       useCORS: true,
-      allowTaint: false,           // FIX: added — prevents tainted canvas from cross-origin elements
+      allowTaint: false,
       logging: false,
       removeContainer: true,
       ignoreElements: (el) => {
