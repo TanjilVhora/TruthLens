@@ -19,11 +19,15 @@ async function shareResult() {
   btn.innerHTML = '⏳ Preparing image...';
   btn.disabled = true;
 
+  // Small delay to ensure all elements are fully rendered before capture
+  await new Promise(resolve => setTimeout(resolve, 300));
+
   try {
     const canvas = await html2canvas(resultCard, {
-      backgroundColor: '#020408',
-      scale: 2,           // High-DPI for crisp image
+      backgroundColor: '#ffffff',  // FIX: was '#020408' (pure black) — use white or your actual card bg color
+      scale: 2,                    // High-DPI for crisp image
       useCORS: true,
+      allowTaint: false,           // FIX: added — prevents tainted canvas from cross-origin elements
       logging: false,
       removeContainer: true,
       ignoreElements: (el) => {
