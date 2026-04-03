@@ -6,18 +6,30 @@ const supabase = createClient(
 );
 
 module.exports = async (req, res) => {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  const { articleText } = req.body;
-
-  if (!articleText) {
-    return res.status(400).json({ error: 'Article text is required' });
-  }
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  
+  const { articleText, userId } = req.body;
+  if (!articleText) return res.status(400).json({ error: 'Article text is required' });
 
   try {
-    // Call Groq API
+    // STEP 1: Search the live web using Tavily
+    const searchResponse = await fetch('https://api.tavily.com/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        api_key: process.env.TAVILY_API_KEY,
+        query: `fact check: ${articleText.substring(0, 200)}`,
+        search_depth: 'basic',
+        max_results: 3
+      })
+    });
+
+    const searchData = await searchResponse.json();
+    const searchContext = searchData.results
+      ? searchData.results.map(r => `Source: ${r.url}\nContent: ${r.content}`).join('\n\n')
+      : 'No web results found.';
+
+    // STEP 2: Send Article + Search Evidence to Groq
     const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -29,40 +41,42 @@ module.exports = async (req, res) => {
         messages: [
           {
             role: 'system',
-            content: `You are an expert fact-checker and investigative journalist. Analyze the given news article carefully and return ONLY a JSON object with NO extra text, NO markdown, NO backticks.
+            content: `You are an expert fact-checker and investigative journalist. You will be given a User Article and Web Search Evidence. Compare them carefully.
 
-CREDIBILITY SCORE RULES (confidenceScore is a credibility scale, NOT a confidence scale):
-- 0 to 35 = Article is FAKE (low credibility)
-- 36 to 64 = Article is UNCERTAIN (mixed or unverifiable claims)
-- 65 to 100 = Article is REAL (high credibility)
+VERDICT RULES:
+- If Search Evidence clearly contradicts the article → verdict is "Fake"
+- If Search Evidence clearly supports the article → verdict is "Real"  
+- If evidence is mixed or insufficient → verdict is "Uncertain"
 
-The confidenceScore MUST match the verdict:
-- If verdict is "Fake" → confidenceScore must be between 0 and 35
-- If verdict is "Uncertain" → confidenceScore must be between 36 and 64
-- If verdict is "Real" → confidenceScore must be between 65 and 100
+CREDIBILITY SCORE RULES (confidenceScore must strictly match verdict):
+- "Fake" → confidenceScore must be between 0 and 35
+- "Uncertain" → confidenceScore must be between 36 and 64
+- "Real" → confidenceScore must be between 65 and 100
 
-REASONS RULES (most important — read carefully):
-- Reasons must be specific to THIS article, never generic
-- Each reason must reference actual claims, names, organizations, or phrases FROM the article
-- For FAKE articles: cross-reference claims against known facts. Example: "The WHO has no record of endorsing lemon water as a cancer cure on who.int" or "Starlink's official website shows no free tier exists for any country"
-- For REAL articles: cite why it is credible. Example: "ISRO's CE-20 engine test is consistent with publicly known Gaganyaan mission timelines" or "iOS 18.4 release matches Apple's official software update page"
-- For UNCERTAIN articles: explain exactly what is verifiable vs what is disputed. Example: "The 6.2% GDP projection is cited by some analysts but contradicts IMF estimates of 6.5–7.1%"
-- Never write vague reasons like "lack of credible sources" or "unrealistic claims" — always be specific
+REASONS RULES:
+- Must be specific to THIS article — never generic
+- Must reference actual claims, names, or phrases FROM the article
+- Must reference search evidence where possible. Example: "According to WHO.int, there is no record of this claim" or "Reuters reported this event on [date] confirming the article"
+- For Fake: explain what the search evidence contradicts
+- For Real: explain what the search evidence confirms
+- For Uncertain: explain what is verifiable vs what is disputed
+- Never write vague reasons like "lacks credible sources"
 
 RED FLAGS RULES:
-- Only include redFlags if verdict is "Fake" or "Uncertain"
-- Red flags must be exact phrases copied from the article that are suspicious
-- Examples: "share before it gets deleted", "secret deal worth zero dollars", "they don't want you to know"
-- For "Real" articles, redFlags should be an empty array []
+- Only for Fake or Uncertain verdicts
+- Must be exact suspicious phrases copied from the article
+- Examples: "share before deleted", "they don't want you to know", "secret cure"
+- For Real articles → redFlags must be empty array []
 
-JSON format: {"verdict": "Real" or "Fake" or "Uncertain", "confidenceScore": integer 0-100, "reasons": ["specific reason 1", "specific reason 2", "specific reason 3"], "redFlags": ["exact phrase 1", "exact phrase 2"]}`
+Return ONLY this JSON with NO extra text, NO markdown, NO backticks:
+{"verdict": "Real" or "Fake" or "Uncertain", "confidenceScore": integer 0-100, "reasons": ["specific reason 1", "specific reason 2", "specific reason 3"], "redFlags": ["exact phrase 1", "exact phrase 2"]}`
           },
           {
             role: 'user',
-            content: `Analyze this article: ${articleText}`
+            content: `USER ARTICLE: ${articleText}\n\nWEB SEARCH EVIDENCE:\n${searchContext}`
           }
         ],
-        temperature: 0.3
+        temperature: 0.1
       })
     });
 
@@ -81,17 +95,18 @@ JSON format: {"verdict": "Real" or "Fake" or "Uncertain", "confidenceScore": int
       result.verdict = 'Uncertain';
     }
 
-    // Safety net: force confidenceScore to match verdict range if Groq ignores instructions
+    // Safety net: force confidenceScore into correct range
     if (result.verdict === 'Fake' && result.confidenceScore > 35) {
-      result.confidenceScore = Math.floor(Math.random() * 21) + 10; // 10-30
+      result.confidenceScore = Math.floor(Math.random() * 21) + 10;
     } else if (result.verdict === 'Uncertain' && (result.confidenceScore < 36 || result.confidenceScore > 64)) {
-      result.confidenceScore = Math.floor(Math.random() * 29) + 36; // 36-64
+      result.confidenceScore = Math.floor(Math.random() * 29) + 36;
     } else if (result.verdict === 'Real' && result.confidenceScore < 65) {
-      result.confidenceScore = Math.floor(Math.random() * 26) + 70; // 70-95
+      result.confidenceScore = Math.floor(Math.random() * 26) + 70;
     }
 
-    // Save to Supabase analyses table
+    // STEP 3: Save to Supabase
     await supabase.from('analyses').insert([{
+      user_id: userId || 'anon',
       article_text: articleText.substring(0, 500),
       verdict: result.verdict,
       confidence_score: result.confidenceScore,
@@ -100,17 +115,13 @@ JSON format: {"verdict": "Real" or "Fake" or "Uncertain", "confidenceScore": int
       input_type: 'text'
     }]);
 
-    // Update global stats
+    // STEP 4: Update Global Stats
     await supabase.rpc('increment_stats', { verdict_value: result.verdict });
 
-    res.json({
-      verdict: result.verdict,
-      confidenceScore: result.confidenceScore,
-      reasons: result.reasons,
-      redFlags: result.redFlags || []
-    });
+    res.json(result);
 
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Backend Error:', error);
+    res.status(500).json({ error: 'Something went wrong. Please try again.' });
   }
 };
