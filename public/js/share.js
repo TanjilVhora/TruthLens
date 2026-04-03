@@ -1,6 +1,4 @@
 // public/js/share.js
-// Uses html2canvas (loaded via CDN) to capture and download the result card as an image
-
 async function shareResult() {
   const btn = document.getElementById('share-btn');
   const resultCard = document.getElementById('result-card');
@@ -10,7 +8,7 @@ async function shareResult() {
     return;
   }
 
-  if (typeof domtoimage  === 'undefined') {
+  if (typeof domtoimage === 'undefined') {
     showToast('Share library not loaded. Please refresh.', 'error');
     return;
   }
@@ -19,32 +17,29 @@ async function shareResult() {
   btn.innerHTML = '⏳ Preparing image...';
   btn.disabled = true;
 
-  // Small delay to ensure all elements are fully rendered before capture
   await new Promise(resolve => setTimeout(resolve, 300));
 
   try {
     const blob = await domtoimage.toBlob(resultCard, {
-  bgcolor: '#020408',
-  scale: 2,
-});
+      bgcolor: '#020408',
+      scale: 2
+    });
 
-((blob) => {
-      if (!blob) {
-        showToast('Could not generate image. Please try again.', 'error');
-        return;
-      }
+    if (!blob) {
+      showToast('Could not generate image. Please try again.', 'error');
+      return;
+    }
 
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `truthlens-result-${Date.now()}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `truthlens-result-${Date.now()}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 
-      showToast('✅ Image downloaded! Share it anywhere.', 'success');
-    }, 'image/png', 1.0);
+    showToast('✅ Image downloaded! Share it anywhere.', 'success');
 
   } catch (err) {
     console.error('[TruthLens] Share error:', err);
