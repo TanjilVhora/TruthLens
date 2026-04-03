@@ -18,7 +18,7 @@ module.exports = async (req, res) => {
 
     try {
       const geminiResponse = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+       `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -27,14 +27,17 @@ module.exports = async (req, res) => {
               parts: [
                 {
                   // Fixed to camelCase: inlineData and mimeType 
-                  inlineData: {
-                    mimeType: 'image/jpeg',
-                    data: imageBase64
-                  }
-                },
-                {
-                  text: 'Extract all the news text from this image exactly. Return only the extracted text with no extra commentary.'
-                }
+                  // ... inside the parts array ...
+{
+  inlineData: {
+    mimeType: 'image/jpeg',
+    // This cleans the string so Gemini doesn't throw a "Invalid data" error
+    data: imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64
+  }
+},
+{
+  text: 'Extract all the news text from this image exactly. Return only the extracted text.'
+}
               ]
             }]
           })
