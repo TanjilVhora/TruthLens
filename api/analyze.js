@@ -145,7 +145,7 @@ Return ONLY this JSON with NO extra text, NO markdown, NO backticks:
       verdict: result.verdict,
       confidence_score: result.confidenceScore,
       reasons: result.reasons,
-      red_gaps: result.redFlags || [],
+      red_flags: result.redFlags || [],
       input_type: 'text'
     }]);
 
