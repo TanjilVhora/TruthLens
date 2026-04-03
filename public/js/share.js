@@ -10,7 +10,7 @@ async function shareResult() {
     return;
   }
 
-  if (typeof html2canvas === 'undefined') {
+  if (typeof domtoimage  === 'undefined') {
     showToast('Share library not loaded. Please refresh.', 'error');
     return;
   }
