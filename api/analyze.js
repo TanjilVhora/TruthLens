@@ -8,17 +8,17 @@ const supabase = createClient(
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { articleText, imageBase64, inputType, userId } = req.body; // [cite: 56]
+  const { articleText, imageBase64, inputType, userId } = req.body;
 
-  // ─── IMAGE FEATURE (Gemini Vision) ───────────────────────────────────────
   let finalText = articleText;
 
+  // ─── IMAGE FEATURE (Gemini Vision) ───────────────────────────────────────
   if (inputType === 'image') {
     if (!imageBase64) return res.status(400).json({ error: 'Image data is required' });
 
     try {
       const geminiResponse = await fetch(
-       `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -26,18 +26,14 @@ module.exports = async (req, res) => {
             contents: [{
               parts: [
                 {
-                  // Fixed to camelCase: inlineData and mimeType 
-                  // ... inside the parts array ...
-{
-  inlineData: {
-    mimeType: 'image/jpeg',
-    // This cleans the string so Gemini doesn't throw a "Invalid data" error
-    data: imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64
-  }
-},
-{
-  text: 'Extract all the news text from this image exactly. Return only the extracted text.'
-}
+                  inlineData: {
+                    mimeType: 'image/jpeg',
+                    data: imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64
+                  }
+                },
+                {
+                  text: 'Extract all the news text from this image exactly. Return only the extracted text.'
+                }
               ]
             }]
           })
@@ -45,7 +41,12 @@ module.exports = async (req, res) => {
       );
 
       const geminiData = await geminiResponse.json();
-      // Accessing the specific response path for Gemini [cite: 99]
+      
+      if (geminiData.error) {
+        console.error('Gemini API Error:', geminiData.error);
+        return res.status(500).json({ error: 'Gemini API failed to process image.' });
+      }
+
       const extractedText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
 
       if (!extractedText) {
@@ -56,7 +57,7 @@ module.exports = async (req, res) => {
 
     } catch (imgError) {
       console.error('Gemini image error:', imgError);
-      return res.status(503).json({ error: 'Image processing failed. Gemini might be at its limit.' });
+      return res.status(503).json({ error: 'Image processing failed.' });
     }
   }
   // ─── END IMAGE FEATURE ────────────────────────────────────────────────────
@@ -64,7 +65,7 @@ module.exports = async (req, res) => {
   if (!finalText) return res.status(400).json({ error: 'Article text is required' });
 
   try {
-    // STEP 1: THE LIBRARIAN — Extract 3 main claims using Groq [cite: 92]
+    // STEP 1: THE LIBRARIAN — Extract Claims
     const claimExtraction = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -74,28 +75,22 @@ module.exports = async (req, res) => {
       body: JSON.stringify({
         model: 'llama-3.3-70b-versatile',
         messages: [
-          {
-            role: 'system',
-            content: 'Extract the 3 most important factual claims from this article. Return ONLY a JSON array of strings: ["claim1", "claim2", "claim3"]'
-          },
-          {
-            role: 'user',
-            content: finalText
-          }
+          { role: 'system', content: 'Extract 3 factual claims. Return ONLY a JSON array: ["c1", "c2", "c3"]' },
+          { role: 'user', content: finalText }
         ],
         temperature: 0.1
       })
     });
 
     const claimData = await claimExtraction.json();
-    let claims;
+    let claims = [];
     try {
       claims = JSON.parse(claimData.choices[0].message.content);
     } catch(e) {
       claims = [finalText.substring(0, 200)];
     }
 
-    // STEP 2: THE RESEARCHER — Search via Tavily [cite: 92]
+    // STEP 2: THE RESEARCHER — Search via Tavily
     const searchPromises = claims.map(claim =>
       fetch('https://api.tavily.com/search', {
         method: 'POST',
@@ -115,7 +110,7 @@ module.exports = async (req, res) => {
       .map(r => `Source: ${r.url}\nContent: ${r.content}`)
       .join('\n\n');
 
-    // STEP 3: THE JUDGE — Final verdict [cite: 78]
+    // STEP 3: THE JUDGE — Final verdict
     const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -127,9 +122,7 @@ module.exports = async (req, res) => {
         messages: [
           {
             role: 'system',
-            content: `You are an expert fact-checker. Compare User Article vs Web Search Evidence. 
-            Rules: Fake (0-35 score), Uncertain (36-64 score), Real (65-100 score). 
-            Return ONLY JSON: {"verdict": "Real"|"Fake"|"Uncertain", "confidenceScore": 0-100, "reasons": [], "redFlags": []}`
+            content: `Return ONLY JSON: {"verdict": "Real"|"Fake"|"Uncertain", "confidenceScore": 0-100, "reasons": [], "redFlags": []}`
           },
           {
             role: 'user',
@@ -143,18 +136,10 @@ module.exports = async (req, res) => {
     const groqData = await groqResponse.json();
     const result = JSON.parse(groqData.choices[0].message.content);
 
-    // Validation & Safety Net for Credibility Meter [cite: 14, 71]
+    // Validation & Safety Net
     if (!['Real', 'Fake', 'Uncertain'].includes(result.verdict)) result.verdict = 'Uncertain';
-    
-    if (result.verdict === 'Fake' && result.confidenceScore > 35) {
-      result.confidenceScore = Math.floor(Math.random() * 21) + 10;
-    } else if (result.verdict === 'Uncertain' && (result.confidenceScore < 36 || result.confidenceScore > 64)) {
-      result.confidenceScore = Math.floor(Math.random() * 29) + 36;
-    } else if (result.verdict === 'Real' && result.confidenceScore < 65) {
-      result.confidenceScore = Math.floor(Math.random() * 26) + 70;
-    }
 
-    // STEP 4: Save to Supabase [cite: 45, 56]
+    // STEP 4: Save to Supabase
     await supabase.from('analyses').insert([{
       user_id: userId || 'anon',
       article_text: finalText.substring(0, 500),
@@ -165,13 +150,13 @@ module.exports = async (req, res) => {
       input_type: inputType || 'text'
     }]);
 
-    // STEP 5: Update Global Stats [cite: 48, 80]
+    // STEP 5: Update Stats
     await supabase.rpc('increment_stats', { verdict_value: result.verdict });
 
     res.json(result);
 
   } catch (error) {
     console.error('Backend Error:', error);
-    res.status(500).json({ error: 'Something went wrong. Please try again.' });
+    res.status(500).json({ error: 'Server error during analysis.' });
   }
 };
