@@ -1,59 +1,47 @@
-// public/js/share.js
 async function shareResult() {
   const btn = document.getElementById('share-btn');
-  const resultCard = document.getElementById('result-card');
+  const resultCard = document.getElementById('result-card'); // [cite: 21]
 
   if (!resultCard) {
     showToast('Nothing to share yet.', 'error');
     return;
   }
 
-  if (typeof domtoimage === 'undefined') {
-    showToast('Share library not loaded. Please refresh.', 'error');
-    return;
-  }
-
   const originalText = btn.innerHTML;
-  btn.innerHTML = '⏳ Preparing image...';
+  btn.innerHTML = '⏳ Processing...';
   btn.disabled = true;
 
-  await new Promise(resolve => setTimeout(resolve, 300));
+  // Filter: Hide buttons and links from the screenshot
+  const filter = (node) => {
+    const skip = ['share-section', 'btn-share', 'nav-links'];
+    if (node.classList && skip.some(cls => node.classList.contains(cls))) {
+      return false;
+    }
+    return true;
+  };
 
   try {
-    const blob = await domtoimage.toBlob(resultCard, {
-      bgcolor: '#020408',
-      scale: 2
+    // toPng is more tenable for complex CSS like yours 
+    const dataUrl = await domtoimage.toPng(resultCard, {
+      bgcolor: '#020408', // Matches your body bg 
+      filter: filter,
+      style: {
+        'padding': '20px',
+        'border-radius': '20px'
+      }
     });
 
-    if (!blob) {
-      showToast('Could not generate image. Please try again.', 'error');
-      return;
-    }
+    const link = document.createElement('a');
+    link.download = `TruthLens-Report-${Date.now()}.png`;
+    link.href = dataUrl;
+    link.click();
 
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `truthlens-result-${Date.now()}.png`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    showToast('✅ Image downloaded! Share it anywhere.', 'success');
-
+    showToast('✅ Report saved successfully!', 'success');
   } catch (err) {
-    console.error('[TruthLens] Share error:', err);
-    showToast('Failed to capture image. Please try again.', 'error');
+    console.error('Download failed:', err);
+    showToast('Snapshot failed. Try again.', 'error');
   } finally {
     btn.innerHTML = originalText;
     btn.disabled = false;
   }
-}
-
-function showToast(msg, type = 'success') {
-  const t = document.getElementById('toast');
-  if (!t) return;
-  t.textContent = msg;
-  t.className = `toast ${type} show`;
-  setTimeout(() => { t.className = `toast ${type}`; }, 3500);
 }
