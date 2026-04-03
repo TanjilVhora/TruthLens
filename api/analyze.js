@@ -12,24 +12,59 @@ module.exports = async (req, res) => {
   if (!articleText) return res.status(400).json({ error: 'Article text is required' });
 
   try {
-    // STEP 1: Search the live web using Tavily
-    const searchResponse = await fetch('https://api.tavily.com/search', {
+    // STEP 1: THE LIBRARIAN — Extract 3 main claims
+    const claimExtraction = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({
-        api_key: process.env.TAVILY_API_KEY,
-        query: `fact check: ${articleText.substring(0, 200)}`,
-        search_depth: 'basic',
-        max_results: 3
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          {
+            role: 'system',
+            content: 'Extract the 3 most important factual claims from this article that can be fact-checked. Return ONLY a JSON array of strings with no extra text: ["claim1", "claim2", "claim3"]'
+          },
+          {
+            role: 'user',
+            content: articleText
+          }
+        ],
+        temperature: 0.1
       })
     });
 
-    const searchData = await searchResponse.json();
-    const searchContext = searchData.results
-      ? searchData.results.map(r => `Source: ${r.url}\nContent: ${r.content}`).join('\n\n')
-      : 'No web results found.';
+    const claimData = await claimExtraction.json();
+    let claims;
+    try {
+      claims = JSON.parse(claimData.choices[0].message.content);
+    } catch(e) {
+      // If claim extraction fails fallback to simple search
+      claims = [articleText.substring(0, 200)];
+    }
 
-    // STEP 2: Send Article + Search Evidence to Groq
+    // STEP 2: THE RESEARCHER — Search all claims simultaneously
+    const searchPromises = claims.map(claim =>
+      fetch('https://api.tavily.com/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          api_key: process.env.TAVILY_API_KEY,
+          query: `fact check: ${claim}`,
+          search_depth: 'basic',
+          max_results: 2
+        })
+      }).then(r => r.json())
+    );
+
+    const allSearchData = await Promise.all(searchPromises);
+    const searchContext = allSearchData
+      .flatMap(data => data.results || [])
+      .map(r => `Source: ${r.url}\nContent: ${r.content}`)
+      .join('\n\n');
+
+    // STEP 3: THE JUDGE — Final verdict with all evidence
     const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -45,7 +80,7 @@ module.exports = async (req, res) => {
 
 VERDICT RULES:
 - If Search Evidence clearly contradicts the article → verdict is "Fake"
-- If Search Evidence clearly supports the article → verdict is "Real"  
+- If Search Evidence clearly supports the article → verdict is "Real"
 - If evidence is mixed or insufficient → verdict is "Uncertain"
 
 CREDIBILITY SCORE RULES (confidenceScore must strictly match verdict):
@@ -56,7 +91,7 @@ CREDIBILITY SCORE RULES (confidenceScore must strictly match verdict):
 REASONS RULES:
 - Must be specific to THIS article — never generic
 - Must reference actual claims, names, or phrases FROM the article
-- Must reference search evidence where possible. Example: "According to WHO.int, there is no record of this claim" or "Reuters reported this event on [date] confirming the article"
+- Must reference search evidence where possible
 - For Fake: explain what the search evidence contradicts
 - For Real: explain what the search evidence confirms
 - For Uncertain: explain what is verifiable vs what is disputed
@@ -65,7 +100,6 @@ REASONS RULES:
 RED FLAGS RULES:
 - Only for Fake or Uncertain verdicts
 - Must be exact suspicious phrases copied from the article
-- Examples: "share before deleted", "they don't want you to know", "secret cure"
 - For Real articles → redFlags must be empty array []
 
 Return ONLY this JSON with NO extra text, NO markdown, NO backticks:
@@ -73,7 +107,7 @@ Return ONLY this JSON with NO extra text, NO markdown, NO backticks:
           },
           {
             role: 'user',
-            content: `USER ARTICLE: ${articleText}\n\nWEB SEARCH EVIDENCE:\n${searchContext}`
+            content: `USER ARTICLE: ${articleText}\n\nWEB SEARCH EVIDENCE:\n${searchContext || 'No web results found — analyze based on article content only.'}`
           }
         ],
         temperature: 0.1
@@ -104,18 +138,18 @@ Return ONLY this JSON with NO extra text, NO markdown, NO backticks:
       result.confidenceScore = Math.floor(Math.random() * 26) + 70;
     }
 
-    // STEP 3: Save to Supabase
+    // STEP 4: Save to Supabase
     await supabase.from('analyses').insert([{
       user_id: userId || 'anon',
       article_text: articleText.substring(0, 500),
       verdict: result.verdict,
       confidence_score: result.confidenceScore,
       reasons: result.reasons,
-      red_flags: result.redFlags || [],
+      red_gaps: result.redFlags || [],
       input_type: 'text'
     }]);
 
-    // STEP 4: Update Global Stats
+    // STEP 5: Update Global Stats
     await supabase.rpc('increment_stats', { verdict_value: result.verdict });
 
     res.json(result);
