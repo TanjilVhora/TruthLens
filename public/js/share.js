@@ -23,21 +23,12 @@ async function shareResult() {
   await new Promise(resolve => setTimeout(resolve, 300));
 
   try {
-    const canvas = await html2canvas(resultCard, {
-      backgroundColor: '#020408',  // FIX: matches --bg-void from style.css (your actual dark background)
-      scale: 2,                    // High-DPI for crisp image
-      useCORS: true,
-      allowTaint: false,
-      logging: false,
-      removeContainer: true,
-      ignoreElements: (el) => {
-        // Don't capture the share buttons section to keep it clean
-        return el.classList && el.classList.contains('share-section');
-      },
-    });
+    const blob = await domtoimage.toBlob(resultCard, {
+  bgcolor: '#020408',
+  scale: 2,
+});
 
-    // Convert to blob and trigger download
-    canvas.toBlob((blob) => {
+((blob) => {
       if (!blob) {
         showToast('Could not generate image. Please try again.', 'error');
         return;
