@@ -140,10 +140,18 @@ async function handleSubmit() {
   }, 1200);
 
   try {
-    // Build request body based on input type
+    // ─── USER ID LOGIC (MATCHES HISTORY.JS) ───
+    const USER_ID_KEY = 'tl_user_id';
+    let userId = localStorage.getItem(USER_ID_KEY);
+    if (!userId) {
+      userId = 'u_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+      localStorage.setItem(USER_ID_KEY, userId);
+    }
+
+    // Build request body and INCLUDE the userId
     const requestBody = selectedInputType === 'image'
-      ? { imageBase64: selectedImageBase64, inputType: 'image' }
-      : { articleText, inputType: 'text' };
+      ? { imageBase64: selectedImageBase64, inputType: 'image', userId: userId }
+      : { articleText, inputType: 'text', userId: userId };
 
     const response = await fetch('/api/analyze', {
       method: 'POST',
