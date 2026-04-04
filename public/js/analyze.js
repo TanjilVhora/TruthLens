@@ -1,210 +1,136 @@
 // public/js/analyze.js
-// Handles article submission, image upload, 3-second cooldown, loading state, API call, and redirect to result.html
+// ✅ Saves to truthlens_result + truthlens_article (matches result.html)
+// ✅ getUserId() defined here — sends userId with every request
+// ✅ Image upload: sends imageBase64 + inputType to backend
+// ✅ 3-second cooldown with drain bar
+// ✅ Loading overlay with rotating messages
 
 const COOLDOWN_MS = 3000;
+const USER_ID_KEY = 'tl_user_id';
+const RESULT_KEY  = 'truthlens_result';
+const ARTICLE_KEY = 'truthlens_article';
+
 let isCoolingDown = false;
-let selectedImageBase64 = null;
-let selectedInputType = 'text';
 
-// ─── IMAGE UPLOAD HANDLER ─────────────────────────────────────────────────────
-function handleImageUpload(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-
-  // Validate file type
-  if (!file.type.startsWith('image/')) {
-    alert('Please select a valid image file.');
-    return;
+function getUserId() {
+  let id = localStorage.getItem(USER_ID_KEY);
+  if (!id) {
+    id = 'u_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+    localStorage.setItem(USER_ID_KEY, id);
   }
-
-  // Validate file size (max 5MB)
-  if (file.size > 5 * 1024 * 1024) {
-    alert('Image size must be less than 5MB.');
-    return;
-  }
-
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    // Strip the data:image/jpeg;base64, prefix — only send raw base64
-    const base64String = e.target.result.split(',')[1];
-    selectedImageBase64 = base64String;
-    selectedInputType = 'image';
-
-    // Show image preview if element exists
-    const preview = document.getElementById('image-preview');
-    const previewImg = document.getElementById('preview-img');
-    const imageLabel = document.getElementById('image-label');
-
-    if (preview && previewImg) {
-      previewImg.src = e.target.result;
-      preview.style.display = 'block';
-    }
-
-    if (imageLabel) {
-      imageLabel.textContent = `✅ ${file.name}`;
-    }
-
-    // Clear textarea when image is selected
-    const textarea = document.getElementById('article-input');
-    if (textarea) textarea.value = '';
-  };
-
-  reader.readAsDataURL(file);
+  return id;
 }
 
-// ─── CLEAR IMAGE ──────────────────────────────────────────────────────────────
-function clearImage() {
-  selectedImageBase64 = null;
-  selectedInputType = 'text';
-
-  const fileInput = document.getElementById('image-input');
-  if (fileInput) fileInput.value = '';
-
-  const preview = document.getElementById('image-preview');
-  if (preview) preview.style.display = 'none';
-
-  const imageLabel = document.getElementById('image-label');
-  if (imageLabel) imageLabel.textContent = '📷 Upload Image';
+function showError(msg) {
+  const box = document.getElementById('error-box');
+  const txt = document.getElementById('error-text');
+  if (!box || !txt) return;
+  txt.textContent = msg;
+  box.classList.add('visible');
+}
+function hideError() {
+  const box = document.getElementById('error-box');
+  if (box) box.classList.remove('visible');
 }
 
-// ─── MAIN SUBMIT HANDLER ──────────────────────────────────────────────────────
 async function handleSubmit() {
-  const textarea = document.getElementById('article-input');
-  const btn = document.getElementById('submit-btn');
-  const btnText = document.getElementById('btn-text');
-  const errorMsg = document.getElementById('error-msg');
-  const errorText = document.getElementById('error-text');
-  const cooldownBar = document.getElementById('cooldown-bar');
-
-  // Hide previous errors
-  errorMsg.style.display = 'none';
-
-  const articleText = textarea ? textarea.value.trim() : '';
-
-  // Validate — must have either text or image
-  if (selectedInputType === 'image') {
-    if (!selectedImageBase64) {
-      errorMsg.style.display = 'flex';
-      errorText.textContent = 'Please select an image to analyze.';
-      return;
-    }
-  } else {
-    if (!articleText) {
-      errorMsg.style.display = 'flex';
-      errorText.textContent = 'Please enter some article text to analyze.';
-      if (textarea) textarea.focus();
-      return;
-    }
-    if (articleText.length < 30) {
-      errorMsg.style.display = 'flex';
-      errorText.textContent = 'Please enter at least 30 characters for a meaningful analysis.';
-      if (textarea) textarea.focus();
-      return;
-    }
-  }
-
-  // Block if cooling down
   if (isCoolingDown) return;
+  hideError();
 
-  // Start cooldown
-  isCoolingDown = true;
-  btn.disabled = true;
-  btnText.textContent = '⏳ Please wait...';
+  const isImageTab = document.getElementById('tab-image')?.classList.contains('active');
+  let articleText = '';
+  let imageBase64 = '';
+  let inputType   = 'text';
 
-  // Animate cooldown bar
-  if (cooldownBar) {
-    cooldownBar.style.transition = 'none';
-    cooldownBar.style.width = '100%';
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        cooldownBar.style.transition = `width ${COOLDOWN_MS}ms linear`;
-        cooldownBar.style.width = '0%';
-      });
-    });
+  if (isImageTab) {
+    const file = document.getElementById('image-input')?.files?.[0];
+    if (!file) { showError('Please upload an image before analyzing.'); return; }
+    try { imageBase64 = await fileToBase64(file); inputType = 'image'; }
+    catch(e) { showError('Failed to read image. Please try again.'); return; }
+  } else {
+    articleText = document.getElementById('article-input')?.value.trim() || '';
+    if (!articleText)          { showError('Please paste some article text before analyzing.'); return; }
+    if (articleText.length < 30) { showError('Please enter at least 30 characters for a meaningful analysis.'); return; }
+    inputType = 'text';
   }
 
-  // Show loading overlay
-  const loadingOverlay = document.getElementById('loading-overlay');
-  if (loadingOverlay) loadingOverlay.classList.add('active');
+  // ── Start cooldown ──
+  isCoolingDown = true;
+  const btn     = document.getElementById('submit-btn');
+  const btnText = document.getElementById('btn-text');
+  const coolBar = document.getElementById('cooldown-bar');
 
-  // Rotate loading messages
-  const loadingMessages = selectedInputType === 'image'
-    ? ['Reading image...', 'Extracting text...', 'Cross-referencing...', 'Computing verdict...']
-    : ['Reading article...', 'Detecting patterns...', 'Cross-referencing...', 'Computing verdict...'];
+  btn.disabled = true;
+  btnText.innerHTML = '<span>⏳</span> Please wait…';
 
-  let msgIdx = 0;
-  const msgInterval = setInterval(() => {
-    msgIdx++;
-    const el = document.getElementById('loading-text');
-    if (el) el.textContent = loadingMessages[msgIdx % loadingMessages.length];
-  }, 1200);
+  coolBar.style.transition = 'none';
+  coolBar.style.width = '100%';
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    coolBar.style.transition = `width ${COOLDOWN_MS}ms linear`;
+    coolBar.style.width = '0%';
+  }));
+
+  setTimeout(() => {
+    isCoolingDown = false;
+    btn.disabled  = false;
+    btnText.innerHTML = '<span>⚡</span> Analyze for Truth';
+    coolBar.style.transition = 'none';
+    coolBar.style.width = '0%';
+  }, COOLDOWN_MS);
+
+  // ── Loading overlay ──
+  const overlay  = document.getElementById('loading-overlay');
+  const loadText = document.getElementById('loading-text');
+  overlay.classList.add('active');
+
+  const msgs = ['Reading article...','Detecting patterns...','Cross-referencing claims...','Computing verdict...','Almost there...'];
+  let mi = 0;
+  const msgInterval = setInterval(() => { mi++; if (loadText) loadText.textContent = msgs[mi % msgs.length]; }, 1300);
 
   try {
-    // ─── USER ID LOGIC (MATCHES HISTORY.JS) ───
-    const USER_ID_KEY = 'tl_user_id';
-    let userId = localStorage.getItem(USER_ID_KEY);
-    if (!userId) {
-      userId = 'u_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
-      localStorage.setItem(USER_ID_KEY, userId);
-    }
-
-    // Build request body and INCLUDE the userId
-    const requestBody = selectedInputType === 'image'
-      ? { imageBase64: selectedImageBase64, inputType: 'image', userId: userId }
-      : { articleText, inputType: 'text', userId: userId };
+    // ✅ Build body — text or image, always include userId
+    const body = { inputType, userId: getUserId() };
+    if (inputType === 'text')  body.articleText  = articleText;
+    if (inputType === 'image') body.imageBase64  = imageBase64;
 
     const response = await fetch('/api/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {
       const errData = await response.json().catch(() => ({}));
-      throw new Error(errData.error || `Server error: ${response.status}`);
+      throw new Error(errData.error || `Server error (${response.status}). Please try again.`);
     }
 
     const result = await response.json();
 
-    // Validate response shape
-    const validVerdicts = ['Real', 'Fake', 'Uncertain'];
-    if (!result.verdict || !validVerdicts.includes(result.verdict)) {
-      throw new Error('Invalid response from server. Please try again.');
-    }
+    if (!['Real','Fake','Uncertain'].includes(result.verdict))
+      throw new Error('Unexpected response from AI. Please try again.');
+    if (typeof result.confidenceScore !== 'number')
+      throw new Error('Invalid confidence score. Please try again.');
 
-    // Save result to localStorage
-    localStorage.setItem('tl_result', JSON.stringify(result));
+    // ✅ Save with keys that result.html reads
+    localStorage.setItem(RESULT_KEY,  JSON.stringify(result));
+    localStorage.setItem(ARTICLE_KEY, articleText || '[Image upload]');
 
-    // Redirect to result page
     window.location.href = 'result.html';
 
-  } catch (err) {
-    if (loadingOverlay) loadingOverlay.classList.remove('active');
-
-    errorMsg.style.display = 'flex';
-    errorText.textContent = err.message || 'Something went wrong. Please try again.';
-
+  } catch(err) {
+    overlay.classList.remove('active');
+    showError(err.message || 'Something went wrong. Please try again.');
     console.error('[TruthLens] Analyze error:', err);
   } finally {
     clearInterval(msgInterval);
-
-    setTimeout(() => {
-      isCoolingDown = false;
-      btn.disabled = false;
-      btnText.textContent = '⚡ Analyze for Truth';
-      if (cooldownBar) {
-        cooldownBar.style.transition = 'none';
-        cooldownBar.style.width = '0%';
-      }
-    }, COOLDOWN_MS);
   }
 }
 
-// ─── EVENT LISTENERS ──────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  const imageInput = document.getElementById('image-input');
-  if (imageInput) imageInput.addEventListener('change', handleImageUpload);
-
-  const clearBtn = document.getElementById('clear-image-btn');
-  if (clearBtn) clearBtn.addEventListener('click', clearImage);
-});
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = e => resolve(e.target.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}

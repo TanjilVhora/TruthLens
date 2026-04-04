@@ -1,91 +1,82 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>History — TruthLens</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/style.css"/>
 </head>
 <body>
-  <div class="orb orb-1"></div>
-  <div class="orb orb-2"></div>
-  <div class="scan-line"></div>
-  <canvas id="particles-canvas"></canvas>
+<div class="page-wrapper" style="position:relative;z-index:1;">
 
-  <div class="page-wrapper">
-    <nav class="navbar">
-      <a href="index.html" class="nav-logo">
-        <div class="logo-icon">🔍</div>
-        <span class="logo-text">TruthLens</span>
-      </a>
-      <div class="nav-links">
-        <a href="index.html">Home</a>
-        <a href="analyze.html">Analyze</a>
-        <a href="history.html" class="active">History</a>
+  <!-- ══ NAVBAR ══ -->
+  <nav class="navbar">
+    <a href="index.html" class="nav-logo">
+      <div class="logo-icon-wrap">🛡</div>
+      <span class="logo-text"><span class="truth">Truth</span><span class="lens">Lens</span></span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="analyze.html">Analyze</a>
+      <a href="history.html" class="active">History</a>
+    </div>
+  </nav>
+
+  <div class="history-container">
+
+    <div class="page-title-section fade-up">
+      <div class="page-tag">Analysis Log</div>
+      <h1 class="page-h1">Analysis <span>History</span></h1>
+      <p class="page-sub">Your personal fact-check log — every article analyzed, with verdicts and scores.</p>
+    </div>
+
+    <!-- ── Mini stats (IDs match history.js) ── -->
+    <div class="mini-stats fade-up">
+      <div class="mini-stat ms-total">
+        <div class="mini-stat-num" id="total-count">—</div>
+        <div class="mini-stat-lbl">📊 Total Analyzed</div>
       </div>
-    </nav>
-
-    <div class="history-container">
-      <div class="page-header fade-up">
-        <div class="holo-badge">Analysis Log</div>
-        <h1 class="page-title">Analysis History</h1>
-        <p class="page-desc">Your past fact-check results, stored and ready to review.</p>
+      <div class="mini-stat ms-fake">
+        <div class="mini-stat-num" id="fake-count">—</div>
+        <div class="mini-stat-lbl">❌ Fake</div>
       </div>
-
-      <!-- Loading skeleton -->
-      <div id="history-loading" style="display:flex;flex-direction:column;gap:14px;">
-        <div class="glass-card" style="padding:22px 26px;opacity:0.5;animation:pulse-dot 1.5s ease infinite;">
-          <div style="height:14px;background:var(--border-crystal);border-radius:6px;margin-bottom:12px;width:70%;"></div>
-          <div style="height:10px;background:var(--border-crystal);border-radius:6px;width:40%;"></div>
-        </div>
-        <div class="glass-card" style="padding:22px 26px;opacity:0.3;animation:pulse-dot 1.5s ease infinite 0.3s;">
-          <div style="height:14px;background:var(--border-crystal);border-radius:6px;margin-bottom:12px;width:80%;"></div>
-          <div style="height:10px;background:var(--border-crystal);border-radius:6px;width:30%;"></div>
-        </div>
-      </div>
-
-      <!-- History list -->
-      <div class="history-list" id="history-list" style="display:none;"></div>
-
-      <!-- Empty state -->
-      <div class="empty-state" id="history-empty" style="display:none;">
-        <div class="empty-icon">📭</div>
-        <div class="empty-title">No analyses yet</div>
-        <div class="empty-desc">Start fact-checking articles to build your history.</div>
-        <a href="analyze.html" class="btn-primary" style="margin-top:8px;">Analyze Your First Article</a>
-      </div>
-
-      <!-- Error state -->
-      <div class="empty-state" id="history-error" style="display:none;">
-        <div class="empty-icon">⚠️</div>
-        <div class="empty-title">Couldn't Load History</div>
-        <div class="empty-desc">Something went wrong. Please try again.</div>
-        <button class="btn-secondary" onclick="loadHistory()" style="margin-top:8px;">Retry</button>
+      <div class="mini-stat ms-real">
+        <div class="mini-stat-num" id="real-count">—</div>
+        <div class="mini-stat-lbl">✅ Real</div>
       </div>
     </div>
 
-    <footer class="footer">
-      TruthLens &nbsp;·&nbsp; OceanLab × CHARUSAT Hacks 2026
-    </footer>
+    <!-- Skeleton loader -->
+    <div id="history-loading" style="display:flex;flex-direction:column;gap:12px;">
+      <div class="skeleton-item"><div class="skel-line" style="width:72%;"></div><div class="skel-line" style="width:38%;height:9px;"></div></div>
+      <div class="skeleton-item" style="opacity:.7;"><div class="skel-line" style="width:82%;"></div><div class="skel-line" style="width:44%;height:9px;"></div></div>
+      <div class="skeleton-item" style="opacity:.4;"><div class="skel-line" style="width:60%;"></div><div class="skel-line" style="width:30%;height:9px;"></div></div>
+    </div>
+
+    <!-- History list -->
+    <div class="history-list" id="history-list" style="display:none;"></div>
+
+    <!-- Empty state -->
+    <div class="empty-state" id="history-empty" style="display:none;">
+      <div class="empty-icon">📭</div>
+      <div class="empty-title">No analyses yet</div>
+      <div class="empty-desc">Start fact-checking articles to build your history.</div>
+      <a href="analyze.html" class="btn-primary">Analyze Your First Article</a>
+    </div>
+
+    <!-- Error state -->
+    <div class="empty-state" id="history-error" style="display:none;">
+      <div class="empty-icon">⚠️</div>
+      <div class="empty-title">Couldn't Load History</div>
+      <div class="empty-desc">Something went wrong. Please try again.</div>
+      <button class="btn-outline" onclick="loadHistory()" style="margin-top:4px;">Retry</button>
+    </div>
+
   </div>
 
-  <script src="js/history.js"></script>
-  <script>
-    // Particles
-    const canvas = document.getElementById('particles-canvas');
-    const ctx = canvas.getContext('2d');
-    let pts = [];
-    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-    resize(); window.addEventListener('resize', resize);
-    for (let i = 0; i < 30; i++) {
-      pts.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random()*1+0.3, vx:(Math.random()-0.5)*0.2, vy:(Math.random()-0.5)*0.2, alpha:Math.random()*0.25+0.05, hue:200+Math.random()*60 });
-    }
-    function draw() {
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-      pts.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; if(p.x<0)p.x=canvas.width; if(p.x>canvas.width)p.x=0; if(p.y<0)p.y=canvas.height; if(p.y>canvas.height)p.y=0; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fillStyle=`hsla(${p.hue},100%,70%,${p.alpha})`; ctx.fill(); });
-      requestAnimationFrame(draw);
-    }
-    draw();
-  </script>
+  <footer class="footer">TruthLens &nbsp;·&nbsp; OceanLab × CHARUSAT Hacks 2026</footer>
+</div>
+
+<script src="history.js"></script>
 </body>
 </html>

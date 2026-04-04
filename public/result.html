@@ -1,201 +1,162 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Result — TruthLens</title>
-  <link rel="stylesheet" href="css/style.css" />
-<script src="https://cdn.jsdelivr.net/npm/dom-to-image-more@2.8.0/dist/dom-to-image-more.min.js"></script>
+  <link rel="stylesheet" href="css/style.css"/>
+  <!-- html2canvas via CDN — no npm needed -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
-  <div class="orb orb-1"></div>
-  <div class="orb orb-2"></div>
-  <div class="scan-line"></div>
-  <canvas id="particles-canvas"></canvas>
+<div class="page-wrapper" style="position:relative;z-index:1;">
 
-  <div class="page-wrapper">
-    <nav class="navbar">
-      <a href="index.html" class="nav-logo">
-        <div class="logo-icon">🔍</div>
-        <span class="logo-text">TruthLens</span>
-      </a>
-      <div class="nav-links">
-        <a href="index.html">Home</a>
-        <a href="analyze.html">Analyze</a>
-        <a href="history.html">History</a>
-      </div>
-    </nav>
+  <!-- ══ NAVBAR ══ -->
+  <nav class="navbar">
+    <a href="index.html" class="nav-logo">
+      <div class="logo-icon-wrap">🛡</div>
+      <span class="logo-text"><span class="truth">Truth</span><span class="lens">Lens</span></span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="analyze.html">Analyze</a>
+      <a href="history.html">History</a>
+    </div>
+  </nav>
 
-    <div class="result-container">
-      <div class="page-header fade-up">
-        <div class="holo-badge">Analysis Complete</div>
-        <h1 class="page-title">Your Result</h1>
-      </div>
+  <div class="result-container">
 
-      <!-- No result fallback -->
-      <div id="no-result" style="display:none;">
-        <div class="empty-state glass-card" style="padding:60px 40px;">
-          <div class="empty-icon">🔍</div>
-          <div class="empty-title">No Result Found</div>
-          <div class="empty-desc">It looks like you haven't analyzed anything yet, or the result has expired.</div>
-          <a href="analyze.html" class="btn-primary">Analyze an Article</a>
-        </div>
-      </div>
+    <div class="page-title-section fade-up">
+      <div class="page-tag">Analysis Complete</div>
+      <h1 class="page-h1">Your <span>Result</span></h1>
+    </div>
 
-      <!-- Result Card -->
-      <div class="glass-card fade-up" id="result-card" style="display:none;">
-        <div class="holo-grid"></div>
-
-        <!-- Verdict -->
-        <div class="verdict-section" id="verdict-section">
-          <span class="verdict-icon" id="verdict-icon"></span>
-          <div class="verdict-label">AI Verdict</div>
-          <div class="verdict-value" id="verdict-value"></div>
-          <div class="confidence-text" id="confidence-text"></div>
-        </div>
-
-        <!-- Credibility Meter -->
-        <div class="meter-section">
-          <div class="meter-header">
-            <span class="meter-title">Credibility Meter</span>
-            <span class="meter-score" id="meter-score"></span>
-          </div>
-          <div class="meter-track">
-            <div class="meter-fill" id="meter-fill"></div>
-          </div>
-          <div class="meter-scale">
-            <span>0% Fake</span>
-            <span>50% Uncertain</span>
-            <span>100% Real</span>
-          </div>
-        </div>
-
-        <div class="divider"></div>
-
-        <!-- Reasons -->
-        <div class="reasons-section">
-          <div class="section-heading">Reason Breakdown</div>
-          <div id="reasons-list"></div>
-        </div>
-
-        <!-- Red Flags -->
-        <div class="flags-section" id="flags-section" style="display:none;">
-          <div class="section-heading">Red Flags Detected</div>
-          <div class="flag-chips" id="flags-list"></div>
-        </div>
-
-        <div class="divider"></div>
-
-        <!-- Share & Actions -->
-        <div class="share-section">
-          <button class="btn-share" id="share-btn" onclick="shareResult()">
-            📤 Download as Image
-          </button>
-          <a href="analyze.html" class="btn-share">
-            🔄 Analyze Another
-          </a>
-          <a href="history.html" class="btn-share">
-            📜 View History
-          </a>
-        </div>
+    <!-- No result fallback -->
+    <div id="no-result" style="display:none;">
+      <div class="empty-state" style="background:var(--bg-card);border:1px solid var(--border-soft);border-radius:var(--r-xl);">
+        <div class="empty-icon">🔍</div>
+        <div class="empty-title">No Result Found</div>
+        <div class="empty-desc">You haven't analyzed anything yet, or the result has expired.</div>
+        <a href="analyze.html" class="btn-primary">Analyze an Article</a>
       </div>
     </div>
 
-    <footer class="footer">
-      TruthLens &nbsp;·&nbsp; OceanLab × CHARUSAT Hacks 2026
-    </footer>
+    <!-- ══ RESULT CARD ══ -->
+    <div id="result-card" class="verdict-card fade-up" style="display:none;">
+
+      <!-- Verdict block -->
+      <div class="verdict-block" id="verdict-block">
+        <div class="verdict-emoji" id="verdict-emoji"></div>
+        <div class="verdict-info">
+          <div class="verdict-sub-label">AI Verdict</div>
+          <div class="verdict-word" id="verdict-word"></div>
+          <div class="verdict-conf-text" id="verdict-conf"></div>
+        </div>
+      </div>
+
+      <!-- Credibility Meter -->
+      <div class="meter-section">
+        <div class="meter-header">
+          <span class="meter-label">Credibility Meter</span>
+          <span class="meter-pct" id="meter-pct-label"></span>
+        </div>
+        <div class="meter-track">
+          <div class="meter-fill" id="meter-fill"></div>
+        </div>
+        <div class="meter-scale">
+          <span>0 · Fake</span>
+          <span>50 · Uncertain</span>
+          <span>100 · Real</span>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Reason Breakdown -->
+      <div class="reasons-wrap">
+        <div class="result-section-head">Reason Breakdown</div>
+        <div id="reasons-list"></div>
+      </div>
+
+      <!-- Red Flags -->
+      <div class="flags-section" id="flags-section" style="display:none;">
+        <div class="result-section-head">Red Flags Detected</div>
+        <div class="flag-chips" id="flags-list"></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Actions -->
+      <div class="action-row">
+        <button class="btn-action" id="share-btn" onclick="shareResult()">📤 Download as Image</button>
+        <a href="analyze.html" class="btn-action">🔄 Analyze Another</a>
+        <a href="history.html" class="btn-action">📜 View History</a>
+      </div>
+
+    </div><!-- /#result-card -->
+
   </div>
 
-  <div class="toast" id="toast"></div>
+  <footer class="footer">TruthLens &nbsp;·&nbsp; OceanLab × CHARUSAT Hacks 2026</footer>
+</div>
 
-  <script src="js/share.js"></script>
-  <script>
-    // Particles
-    const canvas = document.getElementById('particles-canvas');
-    const ctx = canvas.getContext('2d');
-    let pts = [];
-    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-    resize(); window.addEventListener('resize', resize);
-    for (let i = 0; i < 35; i++) {
-      pts.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random()*1+0.3, vx:(Math.random()-0.5)*0.2, vy:(Math.random()-0.5)*0.2, alpha:Math.random()*0.3+0.05, hue:200+Math.random()*60 });
-    }
-    function draw() {
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-      pts.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; if(p.x<0)p.x=canvas.width; if(p.x>canvas.width)p.x=0; if(p.y<0)p.y=canvas.height; if(p.y>canvas.height)p.y=0; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fillStyle=`hsla(${p.hue},100%,70%,${p.alpha})`; ctx.fill(); });
-      requestAnimationFrame(draw);
-    }
-    draw();
+<div class="toast" id="toast"></div>
 
-    // Load result from localStorage
-    window.addEventListener('DOMContentLoaded', () => {
-      const raw = localStorage.getItem('tl_result');
-      if (!raw) {
-        document.getElementById('no-result').style.display = 'block';
-        return;
-      }
+<script src="share.js"></script>
+<script>
+  window.addEventListener('DOMContentLoaded', () => {
+    // ✅ Reads from truthlens_result (matches analyze.js)
+    const raw = localStorage.getItem('truthlens_result');
+    if (!raw) { document.getElementById('no-result').style.display = 'block'; return; }
 
-      let data;
-      try { data = JSON.parse(raw); } catch(e) {
-        document.getElementById('no-result').style.display = 'block';
-        return;
-      }
+    let data;
+    try { data = JSON.parse(raw); }
+    catch(e) { document.getElementById('no-result').style.display = 'block'; return; }
 
-      const { verdict, confidenceScore, reasons, redFlags } = data;
-      document.getElementById('result-card').style.display = 'block';
+    const { verdict, confidenceScore, reasons, redFlags } = data;
+    document.getElementById('result-card').style.display = 'block';
 
-      // Verdict section
-      const verdictClass = verdict.toLowerCase();
-      const icons = { real: '✅', fake: '❌', uncertain: '⚠️' };
-      const section = document.getElementById('verdict-section');
-      section.classList.add(verdictClass);
+    const vc = (verdict || 'uncertain').toLowerCase();
+    const icons = { real: '✅', fake: '❌', uncertain: '⚠️' };
 
-      document.getElementById('verdict-icon').textContent = icons[verdictClass] || '🔍';
-      const vv = document.getElementById('verdict-value');
-      vv.textContent = verdict;
-      vv.classList.add(verdictClass);
+    // Verdict block
+    const vb = document.getElementById('verdict-block');
+    vb.classList.add(vc);
+    document.getElementById('verdict-emoji').textContent = icons[vc] || '🔍';
+    const vw = document.getElementById('verdict-word');
+    vw.textContent = verdict; vw.classList.add(vc);
+    document.getElementById('verdict-conf').textContent = `${confidenceScore}% confidence score`;
 
-      document.getElementById('confidence-text').textContent = `${confidenceScore}% confidence`;
+    // Meter
+    const fill = document.getElementById('meter-fill');
+    fill.classList.add(vc);
+    const pct = document.getElementById('meter-pct-label');
+    pct.textContent = `${confidenceScore}%`;
+    pct.style.color = vc==='real' ? 'var(--real)' : vc==='fake' ? 'var(--fake)' : 'var(--uncertain)';
+    setTimeout(() => { fill.style.width = confidenceScore + '%'; }, 250);
 
-      // Meter
-      const meterFill = document.getElementById('meter-fill');
-      meterFill.classList.add(verdictClass);
-      document.getElementById('meter-score').textContent = `${confidenceScore}%`;
-      document.getElementById('meter-score').style.color = verdictClass === 'real' ? 'var(--real)' : verdictClass === 'fake' ? 'var(--fake)' : 'var(--uncertain)';
-      setTimeout(() => { meterFill.style.width = confidenceScore + '%'; }, 200);
-
-      // Reasons
-      const reasonsList = document.getElementById('reasons-list');
-      if (reasons && reasons.length) {
-        reasons.forEach((r, i) => {
-          const div = document.createElement('div');
-          div.className = 'reason-item';
-          div.style.animationDelay = (i * 0.1 + 0.2) + 's';
-          div.innerHTML = `<div class="reason-dot"></div><div class="reason-text">${r}</div>`;
-          reasonsList.appendChild(div);
-        });
-      } else {
-        reasonsList.innerHTML = '<div class="reason-item"><div class="reason-dot"></div><div class="reason-text">No specific reasons provided.</div></div>';
-      }
-
-      // Red Flags
-      if (redFlags && redFlags.length) {
-        document.getElementById('flags-section').style.display = 'block';
-        const fl = document.getElementById('flags-list');
-        redFlags.forEach(f => {
-          const chip = document.createElement('span');
-          chip.className = 'flag-chip';
-          chip.textContent = f;
-          fl.appendChild(chip);
-        });
-      }
+    // Reasons
+    const rl = document.getElementById('reasons-list');
+    (reasons && reasons.length ? reasons : ['No specific reasons provided.']).forEach((r, i) => {
+      const el = document.createElement('div');
+      el.className = 'reason-item';
+      el.style.animationDelay = (i * 0.1 + 0.2) + 's';
+      el.innerHTML = `<div class="reason-dot"></div><div class="reason-text">${r}</div>`;
+      rl.appendChild(el);
     });
 
-    function showToast(msg, type = 'success') {
-      const t = document.getElementById('toast');
-      t.textContent = msg;
-      t.className = `toast ${type} show`;
-      setTimeout(() => { t.className = `toast ${type}`; }, 3000);
+    // Red flags
+    if (redFlags && redFlags.length) {
+      document.getElementById('flags-section').style.display = 'block';
+      const fl = document.getElementById('flags-list');
+      redFlags.forEach(f => {
+        const ch = document.createElement('span');
+        ch.className = 'flag-chip';
+        ch.textContent = f;
+        fl.appendChild(ch);
+      });
     }
-  </script>
+  });
+</script>
 </body>
 </html>

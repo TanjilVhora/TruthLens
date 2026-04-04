@@ -1,47 +1,30 @@
 // public/js/stats.js
-// Fetches global stats from /api/stats and animates number display
+// ✅ IDs: stat-total, stat-fake, stat-real, stat-uncertain (match index.html)
+// ✅ Reads: totalAnalyses, fakeCount, realCount, uncertainCount
 
-function animateNumber(el, target, duration = 1200) {
-  if (!el) return;
-  const start = 0;
-  const startTime = performance.now();
-  function update(currentTime) {
-    const elapsed = currentTime - startTime;
-    const progress = Math.min(elapsed / duration, 1);
-    // Ease out cubic
-    const eased = 1 - Math.pow(1 - progress, 3);
-    const current = Math.round(start + (target - start) * eased);
-    el.textContent = current.toLocaleString('en-IN');
-    if (progress < 1) requestAnimationFrame(update);
+function animateNum(el, target, dur=1200) {
+  if (!el || typeof target !== 'number') return;
+  const t0 = performance.now();
+  function tick(now) {
+    const p = Math.min((now-t0)/dur, 1);
+    const e = 1 - Math.pow(1-p, 3);
+    el.textContent = Math.round(target*e).toLocaleString('en-IN');
+    if (p < 1) requestAnimationFrame(tick);
   }
-  requestAnimationFrame(update);
+  requestAnimationFrame(tick);
 }
 
 async function loadStats() {
   try {
-    const response = await fetch('/api/stats');
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const stats = await response.json();
-
-    const { totalAnalyses, fakeCount, realCount, uncertainCount } = stats;
-
-    const totalEl = document.getElementById('stat-total');
-    const fakeEl = document.getElementById('stat-fake');
-    const realEl = document.getElementById('stat-real');
-    const uncertainEl = document.getElementById('stat-uncertain');
-
-    if (totalEl) animateNumber(totalEl, totalAnalyses || 0);
-    if (fakeEl) animateNumber(fakeEl, fakeCount || 0);
-    if (realEl) animateNumber(realEl, realCount || 0);
-    if (uncertainEl) animateNumber(uncertainEl, uncertainCount || 0);
-
-  } catch (err) {
-    console.error('[TruthLens] Stats fetch error:', err);
-    // Show dashes on error — already the default state
-    ['stat-total', 'stat-fake', 'stat-real', 'stat-uncertain'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el && el.textContent === '—') el.textContent = '—';
-    });
+    const r = await fetch('/api/stats');
+    if (!r.ok) throw new Error(r.status);
+    const s = await r.json();
+    animateNum(document.getElementById('stat-total'),     s.totalAnalyses  || 0);
+    animateNum(document.getElementById('stat-fake'),      s.fakeCount      || 0);
+    animateNum(document.getElementById('stat-real'),      s.realCount      || 0);
+    animateNum(document.getElementById('stat-uncertain'), s.uncertainCount || 0);
+  } catch(e) {
+    console.error('[TruthLens] Stats:', e);
   }
 }
 

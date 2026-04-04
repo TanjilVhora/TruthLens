@@ -1,163 +1,145 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TruthLens — AI Fake News Detector</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TruthLens — See the Truth Behind Every Story</title>
+  <link rel="stylesheet" href="css/style.css"/>
 </head>
 <body>
-  <!-- Ambient Effects -->
-  <div class="orb orb-1"></div>
-  <div class="orb orb-2"></div>
-  <div class="orb orb-3"></div>
-  <div class="scan-line"></div>
-  <canvas id="particles-canvas"></canvas>
+<div class="page-wrapper" style="position:relative;z-index:1;">
 
-  <div class="page-wrapper">
-    <!-- Navbar -->
-    <nav class="navbar">
-      <a href="index.html" class="nav-logo">
-        <div class="logo-icon">🔍</div>
-        <span class="logo-text">TruthLens</span>
-      </a>
-      <div class="nav-links">
-        <a href="index.html" class="active">Home</a>
-        <a href="analyze.html">Analyze</a>
-        <a href="history.html">History</a>
+  <nav class="navbar">
+    <a href="index.html" class="nav-logo">
+      <div class="logo-icon-wrap">🛡</div>
+      <span class="logo-text"><span class="truth">Truth</span><span class="lens">Lens</span></span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html" class="active">Home</a>
+      <a href="analyze.html">Analyze</a>
+      <a href="history.html">History</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero-section">
+    <div class="hero-badge fade-up">
+      <span class="hero-badge-dot"></span>
+      AI-Powered Fake News Detection ✨
+    </div>
+    <h1 class="hero-title fade-up">
+      <span class="line-white">See the Truth</span>
+      <span class="line-red">Behind Every Story</span>
+    </h1>
+    <p class="hero-subtitle fade-up">
+      Paste any news article and TruthLens will analyze it instantly — giving
+      you a verdict, confidence score, and detailed breakdown.
+    </p>
+    <div class="hero-cta-row fade-up">
+      <a href="analyze.html" class="btn-primary">Start Analyzing →</a>
+      <a href="history.html" class="btn-outline">View History</a>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section class="stats-section">
+    <div class="stats-grid">
+      <div class="stat-card s-total fade-up">
+        <div class="stat-icon-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        </div>
+        <div class="stat-number" id="stat-total">—</div>
+        <div class="stat-label">Analyzed</div>
       </div>
-    </nav>
-
-    <!-- Hero -->
-    <section class="hero fade-up">
-      <div class="holo-badge">AI-Powered Detection</div>
-      <h1 class="hero-title">Truth<br>Lens</h1>
-      <p class="hero-subtitle">
-        Instant AI-powered fake news detection. Paste any article and get a verdict, confidence score, and detailed breakdown — in seconds.
-      </p>
-      <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
-        <a href="analyze.html" class="btn-primary">
-          <span>⚡</span> Analyze Article
-        </a>
-        <a href="history.html" class="btn-secondary">
-          <span>🕐</span> View History
-        </a>
+      <div class="stat-card s-fake fade-up">
+        <div class="stat-icon-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <div class="stat-number" id="stat-fake">—</div>
+        <div class="stat-label">Fake</div>
       </div>
-    </section>
-
-    <!-- Global Stats Banner -->
-    <div class="stats-banner glass-card" style="max-width:900px;margin:0 auto 60px;">
-      <div class="holo-grid"></div>
-      <div class="stats-banner-title">Live Global Stats</div>
-      <div class="stats-grid" id="stats-grid">
-        <div class="stat-cell total fade-up">
-          <div class="stat-number" id="stat-total">—</div>
-          <div class="stat-label">Total Analyzed</div>
+      <div class="stat-card s-real fade-up">
+        <div class="stat-icon-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
         </div>
-        <div class="stat-cell fake-stat fade-up">
-          <div class="stat-number" id="stat-fake">—</div>
-          <div class="stat-label">Fake News</div>
+        <div class="stat-number" id="stat-real">—</div>
+        <div class="stat-label">Real</div>
+      </div>
+      <div class="stat-card s-uncertain fade-up">
+        <div class="stat-icon-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         </div>
-        <div class="stat-cell real-stat fade-up">
-          <div class="stat-number" id="stat-real">—</div>
-          <div class="stat-label">Real News</div>
-        </div>
-        <div class="stat-cell uncertain-stat fade-up">
-          <div class="stat-number" id="stat-uncertain">—</div>
-          <div class="stat-label">Uncertain</div>
-        </div>
+        <div class="stat-number" id="stat-uncertain">—</div>
+        <div class="stat-label">Uncertain</div>
       </div>
     </div>
+  </section>
 
-    <!-- Features -->
-    <section class="features">
-      <div style="margin-bottom:40px;">
-        <div class="section-label">What You Get</div>
-        <h2 class="section-title">Everything you need to spot misinformation</h2>
+  <!-- FEATURES -->
+  <section class="features-section">
+    <div class="section-header fade-up">
+      <div class="section-tag">Features</div>
+      <h2 class="section-title">How It <span>Works</span></h2>
+    </div>
+    <div class="features-grid">
+
+      <div class="feature-card fade-up">
+        <div class="feature-icon-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <div class="feature-title">AI-Powered Verdicts</div>
+        <div class="feature-desc">Get instant Real, Fake, or Uncertain verdicts with confidence scores powered by advanced AI analysis.</div>
       </div>
-      <div class="features-grid">
-        <div class="feature-card glass-card fade-up">
-          <span class="feature-icon">🎯</span>
-          <div class="feature-title">Verdict + Confidence Score</div>
-          <div class="feature-desc">Get a clear Real / Fake / Uncertain verdict with a 0–100% confidence score backed by AI analysis.</div>
+
+      <div class="feature-card fade-up">
+        <div class="feature-icon-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
         </div>
-        <div class="feature-card glass-card fade-up">
-          <span class="feature-icon">🔬</span>
-          <div class="feature-title">Reason Breakdown</div>
-          <div class="feature-desc">Understand why — sensational language, missing sources, logical fallacies, and more explained clearly.</div>
-        </div>
-        <div class="feature-card glass-card fade-up">
-          <span class="feature-icon">📊</span>
-          <div class="feature-title">Credibility Meter</div>
-          <div class="feature-desc">Visual colored gauge showing exactly how credible the article is at a glance — green, yellow, or red.</div>
-        </div>
-        <div class="feature-card glass-card fade-up">
-          <span class="feature-icon">📜</span>
-          <div class="feature-title">Analysis History</div>
-          <div class="feature-desc">All your past analyses saved and accessible — track your fact-checking activity over time.</div>
-        </div>
-        <div class="feature-card glass-card fade-up">
-          <span class="feature-icon">📤</span>
-          <div class="feature-title">Share Results</div>
-          <div class="feature-desc">Download your result as an image and share directly to WhatsApp, Facebook, or any platform.</div>
-        </div>
-        <div class="feature-card glass-card fade-up">
-          <span class="feature-icon">🌐</span>
-          <div class="feature-title">Global Stats</div>
-          <div class="feature-desc">Live counter showing total articles analyzed worldwide and the global fake news percentage.</div>
-        </div>
+        <div class="feature-title">Instant Analysis</div>
+        <div class="feature-desc">Paste any article text and receive a comprehensive breakdown in seconds.</div>
       </div>
-    </section>
 
-    <!-- Footer -->
-    <footer class="footer">
-      Built for OceanLab × CHARUSAT Hacks 2026 &nbsp;·&nbsp;
-      <a href="analyze.html">Start Analyzing</a>
-    </footer>
-  </div>
+      <div class="feature-card fade-up">
+        <div class="feature-icon-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+        <div class="feature-title">Credibility Insights</div>
+        <div class="feature-desc">Visual credibility meter with detailed reason breakdowns and automatic red flag detection.</div>
+      </div>
 
-  <script src="js/stats.js"></script>
-  <script>
-    // Particle system
-    const canvas = document.getElementById('particles-canvas');
-    const ctx = canvas.getContext('2d');
-    let particles = [];
+      <div class="feature-card fade-up">
+        <div class="feature-icon-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        </div>
+        <div class="feature-title">Image Upload</div>
+        <div class="feature-desc">Upload WhatsApp screenshots directly — our AI reads the text from the image and analyzes it.</div>
+      </div>
 
-    function resize() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    }
-    resize();
-    window.addEventListener('resize', resize);
+      <div class="feature-card fade-up">
+        <div class="feature-icon-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        </div>
+        <div class="feature-title">Analysis History</div>
+        <div class="feature-desc">Every fact-check saved to your personal log — review and track your findings over time.</div>
+      </div>
 
-    for (let i = 0; i < 60; i++) {
-      particles.push({
-        x: Math.random() * window.innerWidth,
-        y: Math.random() * window.innerHeight,
-        r: Math.random() * 1.5 + 0.3,
-        vx: (Math.random() - 0.5) * 0.3,
-        vy: (Math.random() - 0.5) * 0.3,
-        alpha: Math.random() * 0.4 + 0.1,
-        hue: Math.random() > 0.5 ? 200 : 260,
-      });
-    }
+      <div class="feature-card fade-up">
+        <div class="feature-icon-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        </div>
+        <div class="feature-title">Share Results</div>
+        <div class="feature-desc">Export your result as an image and share directly to WhatsApp, Instagram, or anywhere.</div>
+      </div>
 
-    function drawParticles() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      particles.forEach(p => {
-        p.x += p.vx; p.y += p.vy;
-        if (p.x < 0) p.x = canvas.width;
-        if (p.x > canvas.width) p.x = 0;
-        if (p.y < 0) p.y = canvas.height;
-        if (p.y > canvas.height) p.y = 0;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `hsla(${p.hue}, 100%, 70%, ${p.alpha})`;
-        ctx.fill();
-      });
-      requestAnimationFrame(drawParticles);
-    }
-    drawParticles();
-  </script>
+    </div>
+  </section>
+
+  <footer class="footer">
+    TruthLens &nbsp;·&nbsp; OceanLab × CHARUSAT Hacks 2026 &nbsp;·&nbsp;
+    <a href="analyze.html">Analyze</a> &nbsp;·&nbsp; <a href="history.html">History</a>
+  </footer>
+
+</div>
+<script src="stats.js"></script>
 </body>
 </html>

@@ -1,47 +1,41 @@
+// public/js/share.js
+// ✅ Uses result-card ID (matches result.html)
+// ✅ html2canvas loaded via CDN script tag
+
 async function shareResult() {
-  const btn = document.getElementById('share-btn');
-  const resultCard = document.getElementById('result-card'); // [cite: 21]
+  const btn  = document.getElementById('share-btn');
+  const card = document.getElementById('result-card');
+  if (!card) { showToast('Nothing to share.','error'); return; }
+  if (typeof html2canvas==='undefined') { showToast('Share library not loaded. Please refresh.','error'); return; }
 
-  if (!resultCard) {
-    showToast('Nothing to share yet.', 'error');
-    return;
-  }
-
-  const originalText = btn.innerHTML;
-  btn.innerHTML = '⏳ Processing...';
-  btn.disabled = true;
-
-  // Filter: Hide buttons and links from the screenshot
-  const filter = (node) => {
-    const skip = ['share-section', 'btn-share', 'nav-links'];
-    if (node.classList && skip.some(cls => node.classList.contains(cls))) {
-      return false;
-    }
-    return true;
-  };
+  const orig = btn.innerHTML;
+  btn.innerHTML='⏳ Preparing…'; btn.disabled=true;
 
   try {
-    // toPng is more tenable for complex CSS like yours 
-    const dataUrl = await domtoimage.toPng(resultCard, {
-      bgcolor: '#020408', // Matches your body bg 
-      filter: filter,
-      style: {
-        'padding': '20px',
-        'border-radius': '20px'
-      }
+    const canvas = await html2canvas(card, {
+      backgroundColor:'#FFFFFF',
+      scale:2, useCORS:true, logging:false, removeContainer:true,
+      ignoreElements: el => el.classList&&el.classList.contains('action-row'),
     });
-
-    const link = document.createElement('a');
-    link.download = `TruthLens-Report-${Date.now()}.png`;
-    link.href = dataUrl;
-    link.click();
-
-    showToast('✅ Report saved successfully!', 'success');
-  } catch (err) {
-    console.error('Download failed:', err);
-    showToast('Snapshot failed. Try again.', 'error');
+    canvas.toBlob(blob => {
+      if (!blob) { showToast('Could not generate image.','error'); return; }
+      const url=URL.createObjectURL(blob), a=document.createElement('a');
+      a.href=url; a.download=`truthlens-${Date.now()}.png`;
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a); URL.revokeObjectURL(url);
+      showToast('✅ Downloaded — share anywhere!','success');
+    },'image/png',1.0);
+  } catch(e) {
+    console.error('[TruthLens] Share:', e);
+    showToast('Failed to capture image. Try again.','error');
   } finally {
-    btn.innerHTML = originalText;
-    btn.disabled = false;
+    btn.innerHTML=orig; btn.disabled=false;
   }
+}
+
+function showToast(msg, type='success') {
+  const t=document.getElementById('toast');
+  if (!t) return;
+  t.textContent=msg; t.className=`toast ${type} show`;
+  setTimeout(()=>t.className=`toast ${type}`,3500);
 }
