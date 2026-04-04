@@ -3,659 +3,161 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TruthLens — See the Truth Behind Every Story</title>
+  <title>TruthLens — AI Fake News Detector</title>
   <link rel="stylesheet" href="css/style.css" />
-  <style>
-    /* ── INDEX-SPECIFIC ── */
-    .hero-section {
-      min-height: 88vh;
-      display: flex;
-      align-items: center;
-      position: relative;
-      overflow: hidden;
-      padding: 80px 0 60px;
-    }
-
-    .hero-content {
-      position: relative;
-      z-index: 2;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 60px;
-      align-items: center;
-    }
-
-    .hero-text { max-width: 560px; }
-
-    .hero-cta-group {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      margin-top: 36px;
-      flex-wrap: wrap;
-    }
-
-    .hero-proof {
-      margin-top: 48px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      color: var(--text-soft);
-      font-size: 0.82rem;
-    }
-
-    .avatar-stack {
-      display: flex;
-    }
-
-    .avatar-stack span {
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--coral-lt), var(--amber));
-      border: 2px solid var(--cream);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      margin-right: -8px;
-    }
-
-    /* ── HERO 3D VISUAL ── */
-    .hero-visual {
-      position: relative;
-      perspective: 1000px;
-    }
-
-    .visual-card {
-      background: rgba(255,255,255,0.82);
-      backdrop-filter: blur(28px) saturate(180%);
-      border: 1px solid rgba(255,255,255,0.95);
-      border-radius: 28px;
-      padding: 28px;
-      box-shadow:
-        0 32px 80px rgba(180,100,80,0.15),
-        0 8px 24px rgba(255,77,109,0.08),
-        0 1px 0 rgba(255,255,255,1) inset;
-      transform: perspective(800px) rotateY(-6deg) rotateX(3deg);
-      transition: transform 0.6s cubic-bezier(0.23,1,0.32,1);
-      animation: cardFloat 6s ease-in-out infinite alternate;
-    }
-
-    .visual-card:hover {
-      transform: perspective(800px) rotateY(-2deg) rotateX(1deg) translateY(-6px);
-    }
-
-    @keyframes cardFloat {
-      0%   { transform: perspective(800px) rotateY(-6deg) rotateX(3deg) translateY(0); }
-      100% { transform: perspective(800px) rotateY(-4deg) rotateX(2deg) translateY(-12px); }
-    }
-
-    .vc-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 20px;
-    }
-
-    .vc-title {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: 0.88rem;
-      color: var(--text-dark);
-    }
-
-    .vc-verdict-chip {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 14px;
-      background: linear-gradient(135deg, rgba(255,77,109,0.12), rgba(255,107,53,0.06));
-      border: 1px solid rgba(255,77,109,0.2);
-      border-radius: 50px;
-      font-family: var(--font-display);
-      font-size: 0.8rem;
-      font-weight: 700;
-      color: var(--coral);
-    }
-
-    .vc-score-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 10px;
-    }
-
-    .vc-score-label { font-size: 0.78rem; color: var(--text-soft); }
-    .vc-score-num {
-      font-family: var(--font-display);
-      font-weight: 800;
-      font-size: 1.1rem;
-      color: var(--coral);
-    }
-
-    .vc-meter {
-      height: 8px;
-      background: rgba(200,185,175,0.25);
-      border-radius: 50px;
-      overflow: hidden;
-      margin-bottom: 20px;
-    }
-
-    .vc-meter-fill {
-      height: 100%;
-      width: 72%;
-      background: linear-gradient(90deg, var(--coral), #ff6b35);
-      border-radius: 50px;
-      box-shadow: 0 0 12px rgba(255,77,109,0.4);
-      position: relative;
-    }
-
-    .vc-meter-fill::after {
-      content: '';
-      position: absolute;
-      top: 1px;
-      left: 6px;
-      right: 6px;
-      height: 3px;
-      background: rgba(255,255,255,0.45);
-      border-radius: 50px;
-    }
-
-    .vc-reasons-title {
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: var(--text-soft);
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      margin-bottom: 10px;
-    }
-
-    .vc-reason {
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-      padding: 9px 12px;
-      background: rgba(255,240,240,0.5);
-      border-radius: 10px;
-      margin-bottom: 7px;
-      font-size: 0.8rem;
-      color: var(--text-mid);
-    }
-
-    .vc-reason-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--coral);
-      margin-top: 5px;
-      flex-shrink: 0;
-    }
-
-    /* Floating badges around visual card */
-    .floating-badge {
-      position: absolute;
-      padding: 8px 14px;
-      background: rgba(255,255,255,0.9);
-      border: 1px solid rgba(255,255,255,0.95);
-      border-radius: 50px;
-      font-size: 0.78rem;
-      font-weight: 600;
-      backdrop-filter: blur(10px);
-      box-shadow: 0 4px 20px rgba(180,100,80,0.12);
-      animation: badgeFloat 4s ease-in-out infinite alternate;
-    }
-
-    .floating-badge-1 {
-      top: -16px;
-      right: 40px;
-      color: var(--teal);
-      border-color: rgba(0,201,177,0.2);
-      animation-duration: 3.5s;
-    }
-
-    .floating-badge-2 {
-      bottom: 40px;
-      left: -30px;
-      color: #b8720a;
-      border-color: rgba(255,179,71,0.25);
-      animation-duration: 5s;
-      animation-delay: 0.5s;
-    }
-
-    @keyframes badgeFloat {
-      0%   { transform: translateY(0) rotate(-1deg); }
-      100% { transform: translateY(-10px) rotate(1deg); }
-    }
-
-    /* ── STATS SECTION ── */
-    .stats-section {
-      padding: 0 0 72px;
-    }
-
-    /* ── FEATURES SECTION ── */
-    .features-section {
-      padding: 80px 0;
-      position: relative;
-    }
-
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 22px;
-      margin-top: 48px;
-    }
-
-    .feat-card {
-      padding: 32px 28px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .feat-card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 3px;
-      background: linear-gradient(90deg, var(--coral), var(--amber));
-      opacity: 0;
-      transition: opacity 0.3s;
-    }
-
-    .feat-card:hover::before { opacity: 1; }
-
-    .feat-title {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: 1.1rem;
-      color: var(--text-dark);
-      margin-bottom: 10px;
-    }
-
-    .feat-desc {
-      font-size: 0.88rem;
-      color: var(--text-soft);
-      line-height: 1.6;
-    }
-
-    /* ── HOW IT WORKS ── */
-    .how-section {
-      padding: 80px 0;
-    }
-
-    .steps-row {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 0;
-      margin-top: 52px;
-      position: relative;
-    }
-
-    .steps-row::before {
-      content: '';
-      position: absolute;
-      top: 28px;
-      left: calc(16.6% + 14px);
-      right: calc(16.6% + 14px);
-      height: 2px;
-      background: linear-gradient(90deg, var(--coral), var(--amber), var(--teal));
-      z-index: 0;
-    }
-
-    .step-item {
-      text-align: center;
-      padding: 0 24px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .step-num {
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: var(--font-display);
-      font-weight: 800;
-      font-size: 1.2rem;
-      margin: 0 auto 20px;
-    }
-
-    .step-num-1 {
-      background: linear-gradient(135deg, var(--coral), #ff6b35);
-      color: #fff;
-      box-shadow: 0 4px 20px var(--coral-glow);
-    }
-
-    .step-num-2 {
-      background: linear-gradient(135deg, var(--amber), #e6952f);
-      color: #fff;
-      box-shadow: 0 4px 20px var(--amber-glow);
-    }
-
-    .step-num-3 {
-      background: linear-gradient(135deg, var(--teal), #0abf9f);
-      color: #fff;
-      box-shadow: 0 4px 20px var(--teal-glow);
-    }
-
-    .step-title {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: 1.05rem;
-      color: var(--text-dark);
-      margin-bottom: 8px;
-    }
-
-    .step-desc {
-      font-size: 0.85rem;
-      color: var(--text-soft);
-      line-height: 1.55;
-    }
-
-    /* ── CTA BANNER ── */
-    .cta-banner {
-      margin: 60px 0;
-      padding: 60px 48px;
-      background: linear-gradient(135deg, rgba(255,77,109,0.08) 0%, rgba(255,179,71,0.08) 50%, rgba(0,201,177,0.08) 100%);
-      border: 1px solid rgba(255,255,255,0.85);
-      border-radius: 32px;
-      text-align: center;
-      backdrop-filter: var(--blur);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .cta-banner::before {
-      content: '';
-      position: absolute;
-      top: -40%;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 60%;
-      height: 80%;
-      background: radial-gradient(ellipse, rgba(255,77,109,0.1) 0%, transparent 70%);
-      pointer-events: none;
-    }
-
-    .cta-banner-title {
-      font-family: var(--font-display);
-      font-size: clamp(1.8rem, 4vw, 2.8rem);
-      font-weight: 800;
-      color: var(--text-dark);
-      margin-bottom: 14px;
-      letter-spacing: -0.03em;
-    }
-
-    .cta-banner-sub {
-      font-size: 1rem;
-      color: var(--text-soft);
-      margin-bottom: 32px;
-      max-width: 440px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-
-    /* Responsive */
-    @media (max-width: 900px) {
-      .hero-content { grid-template-columns: 1fr; gap: 40px; }
-      .hero-visual { display: none; }
-      .features-grid { grid-template-columns: 1fr 1fr; }
-      .steps-row { grid-template-columns: 1fr; gap: 30px; }
-      .steps-row::before { display: none; }
-    }
-
-    @media (max-width: 600px) {
-      .features-grid { grid-template-columns: 1fr; }
-      .cta-banner { padding: 40px 24px; }
-    }
-  </style>
 </head>
 <body>
-  <div class="noise-layer"></div>
+  <!-- Ambient Effects -->
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  <div class="scan-line"></div>
+  <canvas id="particles-canvas"></canvas>
 
   <div class="page-wrapper">
-    <!-- NAV -->
-    <nav>
-      <div class="nav-inner">
-        <a href="index.html" class="nav-logo">
-          <div class="logo-icon">🛡</div>
-          <span>Truth<span style="color:var(--coral)">Lens</span></span>
-        </a>
-        <ul class="nav-links">
-          <li><a href="index.html" class="active">Home</a></li>
-          <li><a href="analyze.html">Analyze</a></li>
-          <li><a href="history.html">History</a></li>
-        </ul>
-        <a href="analyze.html" class="btn btn-primary" style="padding:10px 22px; font-size:0.85rem;">
-          Start Analyzing →
-        </a>
+    <!-- Navbar -->
+    <nav class="navbar">
+      <a href="index.html" class="nav-logo">
+        <div class="logo-icon">🔍</div>
+        <span class="logo-text">TruthLens</span>
+      </a>
+      <div class="nav-links">
+        <a href="index.html" class="active">Home</a>
+        <a href="analyze.html">Analyze</a>
+        <a href="history.html">History</a>
       </div>
     </nav>
 
-    <!-- HERO -->
-    <section class="hero-section">
-      <div class="container">
-        <div class="hero-content">
-          <!-- LEFT TEXT -->
-          <div class="hero-text page-enter">
-            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:24px;">
-              <span class="badge badge-coral"><span class="pulse-dot"></span> AI-Powered</span>
-              <span class="badge badge-teal">Instant Analysis</span>
-            </div>
-
-            <div class="hero-eyebrow">Fake News Detection</div>
-
-            <h1 class="hero-h1">
-              See the Truth<br>
-              <em>Behind Every</em><br>
-              Story
-            </h1>
-
-            <p class="hero-sub">
-              Paste any news article or upload a screenshot — TruthLens gives you a
-              verdict, confidence score, and full credibility breakdown in seconds.
-            </p>
-
-            <div class="hero-cta-group">
-              <a href="analyze.html" class="btn btn-primary" style="font-size:1rem; padding:16px 34px;">
-                Start Analyzing &nbsp;→
-              </a>
-              <a href="history.html" class="btn btn-secondary">
-                View History
-              </a>
-            </div>
-
-            <div class="hero-proof">
-              <div class="avatar-stack">
-                <span>🧑</span><span>👩</span><span>🧔</span>
-              </div>
-              <span id="hero-count" class="loading-shimmer" style="width:140px; height:16px; display:inline-block; border-radius:50px;">
-              </span>
-            </div>
-          </div>
-
-          <!-- RIGHT VISUAL -->
-          <div class="hero-visual reveal reveal-delay-2">
-            <span class="floating-badge floating-badge-1">✅ Real — 94% confidence</span>
-            <span class="floating-badge floating-badge-2">⚠️ 3 Red Flags Found</span>
-
-            <div class="visual-card">
-              <div class="vc-header">
-                <span class="vc-title">Analysis Result</span>
-                <span class="vc-verdict-chip">🚨 Fake</span>
-              </div>
-
-              <div class="vc-score-row">
-                <span class="vc-score-label">Confidence Score</span>
-                <span class="vc-score-num">78%</span>
-              </div>
-
-              <div class="vc-meter">
-                <div class="vc-meter-fill"></div>
-              </div>
-
-              <div class="vc-reasons-title">Key Reasons</div>
-              <div class="vc-reason">
-                <div class="vc-reason-dot"></div>
-                No credible sources cited in the article
-              </div>
-              <div class="vc-reason">
-                <div class="vc-reason-dot"></div>
-                Sensationalist language detected
-              </div>
-              <div class="vc-reason">
-                <div class="vc-reason-dot"></div>
-                Claims contradict known verified facts
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- GLOBAL STATS BANNER -->
-    <section class="stats-section">
-      <div class="container">
-        <div class="stats-banner reveal">
-          <div class="stat-item">
-            <span class="stat-num" id="stat-total">—</span>
-            <div class="stat-label">Articles Analyzed</div>
-          </div>
-          <div class="stat-item">
-            <span class="stat-num teal" id="stat-real">—</span>
-            <div class="stat-label">Verified Real</div>
-          </div>
-          <div class="stat-item">
-            <span class="stat-num" id="stat-fake">—</span>
-            <div class="stat-label">Flagged Fake</div>
-          </div>
-          <div class="stat-item">
-            <span class="stat-num amber" id="stat-uncertain">—</span>
-            <div class="stat-label">Uncertain</div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- FEATURES -->
-    <section class="features-section">
-      <div class="container">
-        <div style="text-align:center;">
-          <div class="section-label">Features</div>
-          <h2 class="section-title">How It <span>Works</span></h2>
-          <p style="color:var(--text-soft); margin-top:12px; font-size:0.95rem; max-width:480px; margin-left:auto; margin-right:auto; line-height:1.6;">
-            Cutting-edge AI analysis that goes beyond simple keyword matching.
-          </p>
-        </div>
-
-        <div class="features-grid">
-          <div class="card feat-card reveal reveal-delay-1">
-            <div class="feat-icon feat-icon-coral">🛡️</div>
-            <div class="feat-title">AI-Powered Verdicts</div>
-            <p class="feat-desc">Get instant Real, Fake, or Uncertain verdicts with confidence scores powered by advanced AI reasoning.</p>
-          </div>
-
-          <div class="card feat-card reveal reveal-delay-2">
-            <div class="feat-icon feat-icon-teal">⚡</div>
-            <div class="feat-title">Instant Analysis</div>
-            <p class="feat-desc">Paste any article text and receive a comprehensive breakdown in seconds — no waiting, no signup required.</p>
-          </div>
-
-          <div class="card feat-card reveal reveal-delay-3">
-            <div class="feat-icon feat-icon-amber">👁️</div>
-            <div class="feat-title">Credibility Insights</div>
-            <p class="feat-desc">Visual credibility meter with detailed reason breakdowns and automatic red flag detection.</p>
-          </div>
-
-          <div class="card feat-card reveal reveal-delay-1">
-            <div class="feat-icon feat-icon-plum">📸</div>
-            <div class="feat-title">Image Analysis</div>
-            <p class="feat-desc">Upload WhatsApp screenshots or article images — TruthLens reads and analyzes text from images too.</p>
-          </div>
-
-          <div class="card feat-card reveal reveal-delay-2">
-            <div class="feat-icon feat-icon-coral">📜</div>
-            <div class="feat-title">Full History</div>
-            <p class="feat-desc">Every analysis is saved. Browse your full history with article snippets, verdicts, and timestamps.</p>
-          </div>
-
-          <div class="card feat-card reveal reveal-delay-3">
-            <div class="feat-icon feat-icon-teal">📤</div>
-            <div class="feat-title">Share Results</div>
-            <p class="feat-desc">Export your analysis as a shareable image to spread awareness and fight misinformation together.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- HOW IT WORKS -->
-    <section class="how-section">
-      <div class="container">
-        <div style="text-align:center;">
-          <div class="section-label">Process</div>
-          <h2 class="section-title">3 Steps to <span>Truth</span></h2>
-        </div>
-
-        <div class="steps-row">
-          <div class="step-item reveal reveal-delay-1">
-            <div class="step-num step-num-1">1</div>
-            <div class="step-title">Paste or Upload</div>
-            <p class="step-desc">Paste your article text directly, or upload a screenshot from WhatsApp or any source.</p>
-          </div>
-          <div class="step-item reveal reveal-delay-2">
-            <div class="step-num step-num-2">2</div>
-            <div class="step-title">AI Analyzes</div>
-            <p class="step-desc">Our AI model examines the content for credibility signals, red flags, and factual consistency.</p>
-          </div>
-          <div class="step-item reveal reveal-delay-3">
-            <div class="step-num step-num-3">3</div>
-            <div class="step-title">Get Your Verdict</div>
-            <p class="step-desc">Receive a detailed verdict with confidence score, reasons, and shareable result card.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- CTA BANNER -->
-    <div class="container">
-      <div class="cta-banner reveal">
-        <h2 class="cta-banner-title">Ready to Fight Misinformation?</h2>
-        <p class="cta-banner-sub">Join thousands already using TruthLens to verify news before sharing.</p>
-        <a href="analyze.html" class="btn btn-primary" style="font-size:1.05rem; padding:17px 38px;">
-          Analyze an Article Now &nbsp;→
+    <!-- Hero -->
+    <section class="hero fade-up">
+      <div class="holo-badge">AI-Powered Detection</div>
+      <h1 class="hero-title">Truth<br>Lens</h1>
+      <p class="hero-subtitle">
+        Instant AI-powered fake news detection. Paste any article and get a verdict, confidence score, and detailed breakdown — in seconds.
+      </p>
+      <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
+        <a href="analyze.html" class="btn-primary">
+          <span>⚡</span> Analyze Article
         </a>
+        <a href="history.html" class="btn-secondary">
+          <span>🕐</span> View History
+        </a>
+      </div>
+    </section>
+
+    <!-- Global Stats Banner -->
+    <div class="stats-banner glass-card" style="max-width:900px;margin:0 auto 60px;">
+      <div class="holo-grid"></div>
+      <div class="stats-banner-title">Live Global Stats</div>
+      <div class="stats-grid" id="stats-grid">
+        <div class="stat-cell total fade-up">
+          <div class="stat-number" id="stat-total">—</div>
+          <div class="stat-label">Total Analyzed</div>
+        </div>
+        <div class="stat-cell fake-stat fade-up">
+          <div class="stat-number" id="stat-fake">—</div>
+          <div class="stat-label">Fake News</div>
+        </div>
+        <div class="stat-cell real-stat fade-up">
+          <div class="stat-number" id="stat-real">—</div>
+          <div class="stat-label">Real News</div>
+        </div>
+        <div class="stat-cell uncertain-stat fade-up">
+          <div class="stat-number" id="stat-uncertain">—</div>
+          <div class="stat-label">Uncertain</div>
+        </div>
       </div>
     </div>
 
-    <!-- FOOTER -->
-    <footer>
-      Built with ❤️ for <span>OceanLab × CHARUSAT Hacks 2026</span> · TruthLens
+    <!-- Features -->
+    <section class="features">
+      <div style="margin-bottom:40px;">
+        <div class="section-label">What You Get</div>
+        <h2 class="section-title">Everything you need to spot misinformation</h2>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card glass-card fade-up">
+          <span class="feature-icon">🎯</span>
+          <div class="feature-title">Verdict + Confidence Score</div>
+          <div class="feature-desc">Get a clear Real / Fake / Uncertain verdict with a 0–100% confidence score backed by AI analysis.</div>
+        </div>
+        <div class="feature-card glass-card fade-up">
+          <span class="feature-icon">🔬</span>
+          <div class="feature-title">Reason Breakdown</div>
+          <div class="feature-desc">Understand why — sensational language, missing sources, logical fallacies, and more explained clearly.</div>
+        </div>
+        <div class="feature-card glass-card fade-up">
+          <span class="feature-icon">📊</span>
+          <div class="feature-title">Credibility Meter</div>
+          <div class="feature-desc">Visual colored gauge showing exactly how credible the article is at a glance — green, yellow, or red.</div>
+        </div>
+        <div class="feature-card glass-card fade-up">
+          <span class="feature-icon">📜</span>
+          <div class="feature-title">Analysis History</div>
+          <div class="feature-desc">All your past analyses saved and accessible — track your fact-checking activity over time.</div>
+        </div>
+        <div class="feature-card glass-card fade-up">
+          <span class="feature-icon">📤</span>
+          <div class="feature-title">Share Results</div>
+          <div class="feature-desc">Download your result as an image and share directly to WhatsApp, Facebook, or any platform.</div>
+        </div>
+        <div class="feature-card glass-card fade-up">
+          <span class="feature-icon">🌐</span>
+          <div class="feature-title">Global Stats</div>
+          <div class="feature-desc">Live counter showing total articles analyzed worldwide and the global fake news percentage.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      Built for OceanLab × CHARUSAT Hacks 2026 &nbsp;·&nbsp;
+      <a href="analyze.html">Start Analyzing</a>
     </footer>
-  </div><!-- end page-wrapper -->
+  </div>
 
-  <script src="stats.js"></script>
+  <script src="js/stats.js"></script>
   <script>
-    // Scroll reveal
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
-    }, { threshold: 0.15 });
-    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+    // Particle system
+    const canvas = document.getElementById('particles-canvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
 
-    // Hero count text update after stats load
-    function updateHeroCount() {
-      const total = document.getElementById('stat-total').textContent;
-      if (total && total !== '—') {
-        document.getElementById('hero-count').outerHTML =
-          `<span style="font-weight:600; color:var(--text-dark);">${total} articles analyzed so far</span>`;
-      } else {
-        document.getElementById('hero-count').outerHTML =
-          `<span style="font-weight:600; color:var(--text-dark);">Thousands of articles analyzed</span>`;
-      }
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
     }
-    window.addEventListener('statsLoaded', updateHeroCount);
-    setTimeout(updateHeroCount, 2500);
+    resize();
+    window.addEventListener('resize', resize);
+
+    for (let i = 0; i < 60; i++) {
+      particles.push({
+        x: Math.random() * window.innerWidth,
+        y: Math.random() * window.innerHeight,
+        r: Math.random() * 1.5 + 0.3,
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: (Math.random() - 0.5) * 0.3,
+        alpha: Math.random() * 0.4 + 0.1,
+        hue: Math.random() > 0.5 ? 200 : 260,
+      });
+    }
+
+    function drawParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => {
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0) p.x = canvas.width;
+        if (p.x > canvas.width) p.x = 0;
+        if (p.y < 0) p.y = canvas.height;
+        if (p.y > canvas.height) p.y = 0;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${p.hue}, 100%, 70%, ${p.alpha})`;
+        ctx.fill();
+      });
+      requestAnimationFrame(drawParticles);
+    }
+    drawParticles();
   </script>
 </body>
 </html>

@@ -5,430 +5,200 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Analyze — TruthLens</title>
   <link rel="stylesheet" href="css/style.css" />
-  <style>
-    .analyze-hero {
-      padding: 60px 0 40px;
-      text-align: center;
-    }
-
-    .analyze-grid {
-      display: grid;
-      grid-template-columns: 1.4fr 1fr;
-      gap: 28px;
-      padding-bottom: 80px;
-      align-items: start;
-    }
-
-    .input-card {
-      padding: 36px 36px 32px;
-    }
-
-    .input-label {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: 0.88rem;
-      color: var(--text-dark);
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .char-count {
-      margin-left: auto;
-      font-size: 0.78rem;
-      font-family: var(--font-body);
-      font-weight: 400;
-      color: var(--text-soft);
-    }
-
-    #article-textarea {
-      width: 100%;
-      min-height: 260px;
-      max-height: 420px;
-      resize: vertical;
-      line-height: 1.65;
-    }
-
-    .submit-row {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      margin-top: 18px;
-      flex-wrap: wrap;
-    }
-
-    #analyze-btn {
-      flex: 1;
-      min-width: 200px;
-      font-size: 1rem;
-      padding: 15px 28px;
-      position: relative;
-    }
-
-    .btn-inner {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-
-    .char-hint {
-      font-size: 0.78rem;
-      color: var(--text-soft);
-      flex: none;
-    }
-
-    /* Cooldown timer */
-    .cooldown-wrap {
-      margin-top: 12px;
-    }
-
-    .cooldown-text {
-      font-size: 0.8rem;
-      color: var(--text-soft);
-      margin-bottom: 6px;
-      text-align: center;
-    }
-
-    /* Image upload panel */
-    .side-card {
-      padding: 28px 24px;
-    }
-
-    .side-title {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: 1rem;
-      color: var(--text-dark);
-      margin-bottom: 6px;
-    }
-
-    .side-sub {
-      font-size: 0.82rem;
-      color: var(--text-soft);
-      margin-bottom: 18px;
-      line-height: 1.55;
-    }
-
-    #img-preview {
-      display: none;
-      width: 100%;
-      max-height: 180px;
-      object-fit: cover;
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--light-gray);
-      margin-top: 12px;
-    }
-
-    .img-remove-btn {
-      display: none;
-      width: 100%;
-      margin-top: 10px;
-      padding: 8px;
-      background: rgba(255,77,109,0.08);
-      border: 1px solid rgba(255,77,109,0.15);
-      border-radius: var(--radius-xs);
-      color: var(--coral);
-      font-size: 0.82rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: var(--transition);
-    }
-
-    .img-remove-btn:hover {
-      background: rgba(255,77,109,0.15);
-    }
-
-    /* Tips card */
-    .tips-card {
-      padding: 22px 20px;
-      margin-top: 20px;
-    }
-
-    .tips-title {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: 0.85rem;
-      color: var(--text-dark);
-      margin-bottom: 12px;
-    }
-
-    .tip-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-      font-size: 0.8rem;
-      color: var(--text-soft);
-      margin-bottom: 8px;
-      line-height: 1.45;
-    }
-
-    .tip-icon { flex-shrink: 0; font-size: 13px; }
-
-    /* Loading overlay */
-    .loading-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(253,248,243,0.88);
-      backdrop-filter: blur(8px);
-      z-index: 200;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 20px;
-    }
-
-    .loading-overlay.active {
-      display: flex;
-    }
-
-    .loading-title {
-      font-family: var(--font-display);
-      font-size: 1.3rem;
-      font-weight: 700;
-      color: var(--text-dark);
-    }
-
-    .loading-sub {
-      font-size: 0.88rem;
-      color: var(--text-soft);
-    }
-
-    .loading-dots span {
-      display: inline-block;
-      width: 9px;
-      height: 9px;
-      border-radius: 50%;
-      background: var(--coral);
-      margin: 0 3px;
-      animation: dotBounce 1.2s infinite ease-in-out;
-    }
-
-    .loading-dots span:nth-child(2) { animation-delay: 0.2s; background: var(--amber); }
-    .loading-dots span:nth-child(3) { animation-delay: 0.4s; background: var(--teal); }
-
-    @keyframes dotBounce {
-      0%, 80%, 100% { transform: translateY(0); opacity: 0.6; }
-      40%            { transform: translateY(-12px); opacity: 1; }
-    }
-
-    .loading-steps {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-top: 4px;
-    }
-
-    .ls-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 0.85rem;
-      color: var(--text-soft);
-      opacity: 0.4;
-      transition: all 0.4s;
-    }
-
-    .ls-item.active {
-      opacity: 1;
-      color: var(--text-dark);
-    }
-
-    .ls-item.done {
-      opacity: 0.7;
-      color: var(--teal);
-    }
-
-    .ls-icon {
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      flex-shrink: 0;
-    }
-
-    .ls-item.active .ls-icon { background: rgba(255,77,109,0.1); }
-    .ls-item.done .ls-icon { background: rgba(0,201,177,0.1); }
-
-    @media (max-width: 820px) {
-      .analyze-grid { grid-template-columns: 1fr; }
-    }
-  </style>
 </head>
 <body>
-  <div class="noise-layer"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="scan-line"></div>
+  <canvas id="particles-canvas"></canvas>
 
-  <!-- LOADING OVERLAY -->
+  <!-- Loading Overlay -->
   <div class="loading-overlay" id="loading-overlay">
-    <div style="text-align:center;">
-      <div class="loading-dots" style="margin-bottom:24px;">
-        <span></span><span></span><span></span>
-      </div>
-      <div class="loading-title">Analyzing your article…</div>
-      <div class="loading-sub" style="margin-top:6px;">This usually takes a few seconds</div>
-
-      <div class="loading-steps" style="margin-top:28px; min-width:220px;">
-        <div class="ls-item active" id="ls-1">
-          <div class="ls-icon">📖</div> Reading article content
-        </div>
-        <div class="ls-item" id="ls-2">
-          <div class="ls-icon">🧠</div> Running AI analysis
-        </div>
-        <div class="ls-item" id="ls-3">
-          <div class="ls-icon">🔍</div> Checking red flags
-        </div>
-        <div class="ls-item" id="ls-4">
-          <div class="ls-icon">✅</div> Preparing your result
-        </div>
-      </div>
+    <div class="loading-ring">
+      <div class="loading-dot"></div>
+    </div>
+    <div class="loading-text" id="loading-text">Analyzing article...</div>
+    <div style="font-size:0.75rem;color:var(--text-dim);font-family:'Space Mono',monospace;text-align:center;max-width:260px;line-height:1.6;">
+      Our AI is reading, cross-referencing, and evaluating the credibility of your article
     </div>
   </div>
 
   <div class="page-wrapper">
-    <nav>
-      <div class="nav-inner">
-        <a href="index.html" class="nav-logo">
-          <div class="logo-icon">🛡</div>
-          <span>Truth<span style="color:var(--coral)">Lens</span></span>
-        </a>
-        <ul class="nav-links">
-          <li><a href="index.html">Home</a></li>
-          <li><a href="analyze.html" class="active">Analyze</a></li>
-          <li><a href="history.html">History</a></li>
-        </ul>
+    <nav class="navbar">
+      <a href="index.html" class="nav-logo">
+        <div class="logo-icon">🔍</div>
+        <span class="logo-text">TruthLens</span>
+      </a>
+      <div class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="analyze.html" class="active">Analyze</a>
+        <a href="history.html">History</a>
       </div>
     </nav>
 
-    <section class="analyze-hero">
-      <div class="container">
-        <div class="section-label">Detection Engine</div>
-        <h1 class="section-title">Analyze an <span>Article</span></h1>
-        <p style="color:var(--text-soft); margin-top:12px; font-size:0.95rem; max-width:440px; margin-left:auto; margin-right:auto; line-height:1.6;">
-          Paste the article text below or upload an image. Our AI will analyze it and return a full credibility report.
-        </p>
+    <div class="analyze-container">
+      <div class="page-header fade-up">
+        <div class="holo-badge">AI Engine Active</div>
+        <h1 class="page-title">Analyze Article</h1>
+        <p class="page-desc">Paste a full news article or upload a WhatsApp screenshot. Our AI will return a verdict in seconds.</p>
       </div>
-    </section>
 
-    <div class="container">
-      <div class="analyze-grid">
+      <div class="glass-card fade-up">
+        <div class="holo-grid"></div>
+        <div class="analyze-form">
 
-        <!-- INPUT CARD -->
-        <div class="card input-card page-enter">
-          <label class="input-label" for="article-textarea">
-            📝 Article Text
-            <span class="char-count" id="char-count">0 characters</span>
-          </label>
-
-          <textarea
-            class="input-field"
-            id="article-textarea"
-            placeholder="Paste the full article text here… Headlines, body content, author claims — the more you paste, the better the analysis."
-          ></textarea>
-
-          <div class="submit-row">
-            <button class="btn btn-primary" id="analyze-btn">
-              <span class="btn-inner">
-                <span id="btn-icon">⚡</span>
-                <span id="btn-text">Analyze Now</span>
-              </span>
+          <!-- Input Type Toggle -->
+          <div style="display:flex;gap:10px;margin-bottom:20px;">
+            <button id="tab-text" onclick="switchTab('text')" style="flex:1;padding:10px;border-radius:8px;border:1px solid rgba(99,179,237,0.4);background:rgba(99,179,237,0.15);color:#63b3ed;font-size:0.82rem;font-family:'Space Mono',monospace;cursor:pointer;letter-spacing:1px;font-weight:700;">
+              📝 TEXT
             </button>
-            <span class="char-hint" id="char-hint">Minimum 80 characters</span>
+            <button id="tab-image" onclick="switchTab('image')" style="flex:1;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:var(--text-dim);font-size:0.82rem;font-family:'Space Mono',monospace;cursor:pointer;letter-spacing:1px;font-weight:700;">
+              📷 IMAGE
+            </button>
           </div>
 
-          <div class="cooldown-wrap" id="cooldown-wrap" style="display:none;">
-            <div class="cooldown-text" id="cooldown-text">Please wait 3 seconds…</div>
-            <div class="cooldown-bar">
-              <div class="cooldown-fill" id="cooldown-fill" style="width:100%;"></div>
+          <!-- Text Input -->
+          <div id="text-section" class="input-group">
+            <label class="input-label" for="article-input">Article Text</label>
+            <textarea
+              class="article-textarea"
+              id="article-input"
+              placeholder="Paste the news article or any suspicious text here...&#10;&#10;Tip: The more text you provide, the more accurate the analysis will be."
+              spellcheck="false"
+            ></textarea>
+            <div class="char-counter"><span id="char-count">0</span> characters</div>
+          </div>
+
+          <!-- Image Upload Section -->
+          <div id="image-section" class="input-group" style="display:none;">
+            <label class="input-label">Upload Screenshot</label>
+
+            <!-- Hidden file input -->
+            <input type="file" id="image-input" accept="image/*" style="display:none;" />
+
+            <!-- Upload area -->
+            <div id="upload-area" onclick="document.getElementById('image-input').click()" style="border:2px dashed rgba(99,179,237,0.3);border-radius:12px;padding:40px 20px;text-align:center;cursor:pointer;transition:border-color 0.2s;background:rgba(99,179,237,0.03);">
+              <div style="font-size:2.5rem;margin-bottom:10px;">📷</div>
+              <div style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:6px;">Click to upload a WhatsApp screenshot</div>
+              <div style="color:var(--text-dim);font-size:0.75rem;font-family:'Space Mono',monospace;">JPG, PNG, WEBP — max 5MB</div>
+            </div>
+
+            <!-- Image preview (hidden until image selected) -->
+            <div id="image-preview" style="display:none;margin-top:14px;position:relative;">
+              <img id="preview-img" style="width:100%;max-height:300px;object-fit:contain;border-radius:10px;border:1px solid rgba(255,255,255,0.1);" />
+              <button id="clear-image-btn" onclick="clearImage()" style="position:absolute;top:8px;right:8px;background:rgba(239,68,68,0.8);border:none;border-radius:6px;color:white;padding:4px 10px;cursor:pointer;font-size:0.8rem;">✕ Remove</button>
             </div>
           </div>
 
-          <div style="margin-top:18px;" id="error-msg"></div>
-        </div>
-
-        <!-- RIGHT COLUMN -->
-        <div>
-          <!-- Image Upload -->
-          <div class="card side-card page-enter" style="animation-delay:0.1s;">
-            <div class="side-title">📸 Upload an Image</div>
-            <p class="side-sub">Upload a screenshot of a news article, WhatsApp forward, or social post. Note: image uploads are analyzed via text extraction.</p>
-
-            <div class="upload-zone" id="upload-zone">
-              <input type="file" id="img-input" accept="image/*" />
-              <div class="upload-icon">🖼️</div>
-              <div class="upload-text">Drop image here or click to browse</div>
-              <div class="upload-subtext">PNG, JPG, WEBP up to 8MB</div>
-            </div>
-
-            <img id="img-preview" src="" alt="Preview" />
-            <button class="img-remove-btn" id="img-remove">✕ Remove Image</button>
+          <!-- Error message -->
+          <div id="error-msg" style="display:none;margin-bottom:18px;padding:12px 16px;border-radius:10px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#fca5a5;font-size:0.875rem;align-items:center;gap:8px;">
+            <span>⚠️</span>
+            <span id="error-text">Please enter some article text to analyze.</span>
           </div>
 
-          <!-- Tips -->
-          <div class="card tips-card" style="margin-top:20px;">
-            <div class="tips-title">💡 For Best Results</div>
-            <div class="tip-item"><span class="tip-icon">📄</span> Paste the full article including headline and body</div>
-            <div class="tip-item"><span class="tip-icon">🔗</span> Include author names and publication if visible</div>
-            <div class="tip-item"><span class="tip-icon">📏</span> Longer articles give more accurate results</div>
-            <div class="tip-item"><span class="tip-icon">🚫</span> Avoid pasting only headlines — context matters</div>
+          <!-- Submit Button -->
+          <button class="btn-analyze" id="submit-btn" onclick="handleSubmit()">
+            <div class="cooldown-bar" id="cooldown-bar"></div>
+            <span class="btn-text" id="btn-text">⚡ Analyze for Truth</span>
+          </button>
+
+          <div style="display:flex;align-items:center;gap:12px;margin-top:18px;justify-content:center;">
+            <span style="font-size:0.72rem;color:var(--text-dim);font-family:'Space Mono',monospace;letter-spacing:1px;">POWERED BY GROQ + GEMINI AI</span>
+            <span style="width:4px;height:4px;border-radius:50%;background:var(--text-dim);display:inline-block;"></span>
+            <span style="font-size:0.72rem;color:var(--text-dim);font-family:'Space Mono',monospace;letter-spacing:1px;">RESULTS IN ~3 SECONDS</span>
           </div>
         </div>
+      </div>
 
+      <!-- Tips Card -->
+      <div class="glass-card-inner fade-up" style="padding:20px 24px;margin-top:20px;background:rgba(0,100,200,0.06);">
+        <div style="font-size:0.72rem;font-weight:700;letter-spacing:2px;color:var(--text-dim);font-family:'Space Mono',monospace;margin-bottom:14px;">TIPS FOR BEST RESULTS</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">
+          <div style="display:flex;align-items:flex-start;gap:10px;">
+            <span style="font-size:1rem;">📋</span>
+            <span style="font-size:0.82rem;color:var(--text-secondary);line-height:1.5;">Paste the full article text including the headline for better accuracy</span>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:10px;">
+            <span style="font-size:1rem;">📷</span>
+            <span style="font-size:0.82rem;color:var(--text-secondary);line-height:1.5;">Upload clear WhatsApp screenshots for image analysis</span>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:10px;">
+            <span style="font-size:1rem;">🌐</span>
+            <span style="font-size:0.82rem;color:var(--text-secondary);line-height:1.5;">Works with articles in any language</span>
+          </div>
+        </div>
       </div>
     </div>
 
-    <footer>
-      Built with ❤️ for <span>OceanLab × CHARUSAT Hacks 2026</span> · TruthLens
+    <footer class="footer">
+      TruthLens &nbsp;·&nbsp; OceanLab × CHARUSAT Hacks 2026
     </footer>
   </div>
 
-  <script src="analyze.js"></script>
+  <script src="js/analyze.js"></script>
   <script>
-    // Image upload handling
-    const uploadZone = document.getElementById('upload-zone');
-    const imgInput = document.getElementById('img-input');
-    const imgPreview = document.getElementById('img-preview');
-    const imgRemove = document.getElementById('img-remove');
+    // Tab switcher
+    function switchTab(type) {
+      const textSection = document.getElementById('text-section');
+      const imageSection = document.getElementById('image-section');
+      const tabText = document.getElementById('tab-text');
+      const tabImage = document.getElementById('tab-image');
 
-    uploadZone.addEventListener('dragover', e => {
-      e.preventDefault();
-      uploadZone.classList.add('drag-over');
-    });
-    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
-    uploadZone.addEventListener('drop', e => {
-      e.preventDefault();
-      uploadZone.classList.remove('drag-over');
-      const file = e.dataTransfer.files[0];
-      if (file && file.type.startsWith('image/')) handleImageFile(file);
-    });
-
-    imgInput.addEventListener('change', () => {
-      if (imgInput.files[0]) handleImageFile(imgInput.files[0]);
-    });
-
-    function handleImageFile(file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        imgPreview.src = e.target.result;
-        imgPreview.style.display = 'block';
-        imgRemove.style.display = 'block';
-        uploadZone.querySelector('.upload-icon').textContent = '✅';
-        uploadZone.querySelector('.upload-text').textContent = file.name;
-      };
-      reader.readAsDataURL(file);
+      if (type === 'text') {
+        textSection.style.display = 'block';
+        imageSection.style.display = 'none';
+        tabText.style.background = 'rgba(99,179,237,0.15)';
+        tabText.style.borderColor = 'rgba(99,179,237,0.4)';
+        tabText.style.color = '#63b3ed';
+        tabImage.style.background = 'transparent';
+        tabImage.style.borderColor = 'rgba(255,255,255,0.1)';
+        tabImage.style.color = 'var(--text-dim)';
+        // Reset image state
+        if (typeof clearImage === 'function') clearImage();
+      } else {
+        textSection.style.display = 'none';
+        imageSection.style.display = 'block';
+        tabImage.style.background = 'rgba(99,179,237,0.15)';
+        tabImage.style.borderColor = 'rgba(99,179,237,0.4)';
+        tabImage.style.color = '#63b3ed';
+        tabText.style.background = 'transparent';
+        tabText.style.borderColor = 'rgba(255,255,255,0.1)';
+        tabText.style.color = 'var(--text-dim)';
+      }
     }
 
-    imgRemove.addEventListener('click', () => {
-      imgPreview.src = '';
-      imgPreview.style.display = 'none';
-      imgRemove.style.display = 'none';
-      imgInput.value = '';
-      uploadZone.querySelector('.upload-icon').textContent = '🖼️';
-      uploadZone.querySelector('.upload-text').textContent = 'Drop image here or click to browse';
+    // Particles
+    const canvas = document.getElementById('particles-canvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+    resize();
+    window.addEventListener('resize', resize);
+    for (let i = 0; i < 40; i++) {
+      particles.push({
+        x: Math.random() * window.innerWidth, y: Math.random() * window.innerHeight,
+        r: Math.random() * 1.2 + 0.3, vx: (Math.random() - 0.5) * 0.25, vy: (Math.random() - 0.5) * 0.25,
+        alpha: Math.random() * 0.3 + 0.05, hue: 200 + Math.random() * 60,
+      });
+    }
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => {
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0) p.x = canvas.width; if (p.x > canvas.width) p.x = 0;
+        if (p.y < 0) p.y = canvas.height; if (p.y > canvas.height) p.y = 0;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${p.hue}, 100%, 70%, ${p.alpha})`; ctx.fill();
+      });
+      requestAnimationFrame(draw);
+    }
+    draw();
+
+    // Char counter
+    const textarea = document.getElementById('article-input');
+    const charCount = document.getElementById('char-count');
+    textarea.addEventListener('input', () => {
+      charCount.textContent = textarea.value.length;
     });
   </script>
 </body>

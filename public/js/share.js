@@ -1,43 +1,47 @@
-// share.js — Converts result card to downloadable image using html2canvas
-
 async function shareResult() {
-  const card = document.getElementById('result-card');
-  if (!card) {
-    alert('Nothing to share.');
+  const btn = document.getElementById('share-btn');
+  const resultCard = document.getElementById('result-card'); // [cite: 21]
+
+  if (!resultCard) {
+    showToast('Nothing to share yet.', 'error');
     return;
   }
 
+  const originalText = btn.innerHTML;
+  btn.innerHTML = '⏳ Processing...';
+  btn.disabled = true;
+
+  // Filter: Hide buttons and links from the screenshot
+  const filter = (node) => {
+    const skip = ['share-section', 'btn-share', 'nav-links'];
+    if (node.classList && skip.some(cls => node.classList.contains(cls))) {
+      return false;
+    }
+    return true;
+  };
+
   try {
-    const canvas = await html2canvas(card, {
-      backgroundColor: '#fdf8f3',
-      scale: 2,
-      useCORS: true,
-      allowTaint: false,
-      logging: false,
+    // toPng is more tenable for complex CSS like yours 
+    const dataUrl = await domtoimage.toPng(resultCard, {
+      bgcolor: '#020408', // Matches your body bg 
+      filter: filter,
+      style: {
+        'padding': '20px',
+        'border-radius': '20px'
+      }
     });
 
-    // Show preview
-    const preview = document.getElementById('share-preview');
-    if (preview) {
-      preview.src = canvas.toDataURL('image/png');
-      preview.style.display = 'block';
-    }
-
-    // Trigger download
     const link = document.createElement('a');
-    link.download = `truthlens-result-${Date.now()}.png`;
-    link.href = canvas.toDataURL('image/png');
+    link.download = `TruthLens-Report-${Date.now()}.png`;
+    link.href = dataUrl;
     link.click();
 
-    // Show toast
-    const toast = document.getElementById('toast');
-    if (toast) {
-      toast.textContent = '✅ Image saved to your downloads!';
-      toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 3000);
-    }
+    showToast('✅ Report saved successfully!', 'success');
   } catch (err) {
-    console.error('html2canvas error:', err);
-    throw err;
+    console.error('Download failed:', err);
+    showToast('Snapshot failed. Try again.', 'error');
+  } finally {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
   }
 }

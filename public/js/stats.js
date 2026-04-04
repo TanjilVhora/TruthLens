@@ -1,46 +1,48 @@
-// stats.js — Fetches global stats and updates counters
+// public/js/stats.js
+// Fetches global stats from /api/stats and animates number display
 
-(function () {
-  function animateCount(el, target, duration = 1200) {
-    if (!el || isNaN(target)) return;
-    const start = 0;
-    const startTime = performance.now();
-
-    function update(now) {
-      const elapsed = now - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      const current = Math.round(start + (target - start) * eased);
-      el.textContent = current.toLocaleString();
-      if (progress < 1) requestAnimationFrame(update);
-    }
-
-    requestAnimationFrame(update);
+function animateNumber(el, target, duration = 1200) {
+  if (!el) return;
+  const start = 0;
+  const startTime = performance.now();
+  function update(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    // Ease out cubic
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const current = Math.round(start + (target - start) * eased);
+    el.textContent = current.toLocaleString('en-IN');
+    if (progress < 1) requestAnimationFrame(update);
   }
+  requestAnimationFrame(update);
+}
 
-  async function loadStats() {
-    try {
-      const res = await fetch('/api/stats');
-      if (!res.ok) throw new Error('Stats unavailable');
-      const data = await res.json();
+async function loadStats() {
+  try {
+    const response = await fetch('/api/stats');
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const stats = await response.json();
 
-      const { totalAnalyses = 0, fakeCount = 0, realCount = 0, uncertainCount = 0 } = data;
+    const { totalAnalyses, fakeCount, realCount, uncertainCount } = stats;
 
-      animateCount(document.getElementById('stat-total'), totalAnalyses);
-      animateCount(document.getElementById('stat-real'), realCount);
-      animateCount(document.getElementById('stat-fake'), fakeCount);
-      animateCount(document.getElementById('stat-uncertain'), uncertainCount);
+    const totalEl = document.getElementById('stat-total');
+    const fakeEl = document.getElementById('stat-fake');
+    const realEl = document.getElementById('stat-real');
+    const uncertainEl = document.getElementById('stat-uncertain');
 
-      window.dispatchEvent(new CustomEvent('statsLoaded', { detail: data }));
-    } catch (err) {
-      // Silently set fallback values
-      ['stat-total', 'stat-real', 'stat-fake', 'stat-uncertain'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = '—';
-      });
-      window.dispatchEvent(new CustomEvent('statsLoaded', { detail: {} }));
-    }
+    if (totalEl) animateNumber(totalEl, totalAnalyses || 0);
+    if (fakeEl) animateNumber(fakeEl, fakeCount || 0);
+    if (realEl) animateNumber(realEl, realCount || 0);
+    if (uncertainEl) animateNumber(uncertainEl, uncertainCount || 0);
+
+  } catch (err) {
+    console.error('[TruthLens] Stats fetch error:', err);
+    // Show dashes on error — already the default state
+    ['stat-total', 'stat-fake', 'stat-real', 'stat-uncertain'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el && el.textContent === '—') el.textContent = '—';
+    });
   }
+}
 
-  loadStats();
-})();
+document.addEventListener('DOMContentLoaded', loadStats);

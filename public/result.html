@@ -5,413 +5,197 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Result — TruthLens</title>
   <link rel="stylesheet" href="css/style.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <style>
-    .result-page {
-      padding: 50px 0 80px;
-    }
-
-    .result-grid {
-      display: grid;
-      grid-template-columns: 1.2fr 1fr;
-      gap: 24px;
-      align-items: start;
-    }
-
-    /* ── MAIN RESULT CARD ── */
-    .main-result-card {
-      padding: 36px;
-    }
-
-    .verdict-header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      margin-bottom: 28px;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-
-    .verdict-left { flex: 1; }
-
-    .verdict-word {
-      font-family: var(--font-display);
-      font-size: clamp(2.5rem, 6vw, 4rem);
-      font-weight: 800;
-      letter-spacing: -0.04em;
-      line-height: 1;
-      margin-bottom: 8px;
-    }
-
-    .verdict-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 18px;
-      border-radius: 50px;
-      font-family: var(--font-display);
-      font-size: 0.88rem;
-      font-weight: 700;
-    }
-
-    .confidence-big {
-      text-align: right;
-    }
-
-    .confidence-num {
-      font-family: var(--font-display);
-      font-size: clamp(2.5rem, 6vw, 3.8rem);
-      font-weight: 800;
-      line-height: 1;
-      letter-spacing: -0.04em;
-    }
-
-    .confidence-label {
-      font-size: 0.78rem;
-      color: var(--text-soft);
-      text-align: right;
-    }
-
-    /* Meter */
-    .meter-section { margin-bottom: 28px; }
-
-    .meter-labels {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.75rem;
-      color: var(--text-soft);
-      margin-bottom: 8px;
-    }
-
-    .meter-track { height: 14px; }
-
-    /* Article snippet */
-    .snippet-box {
-      background: rgba(255,255,255,0.5);
-      border: 1px solid var(--light-gray);
-      border-radius: var(--radius-sm);
-      padding: 16px;
-      font-size: 0.85rem;
-      color: var(--text-soft);
-      line-height: 1.6;
-      font-style: italic;
-      margin-bottom: 24px;
-      max-height: 100px;
-      overflow: hidden;
-      position: relative;
-    }
-
-    .snippet-box::after {
-      content: '';
-      position: absolute;
-      bottom: 0; left: 0; right: 0;
-      height: 36px;
-      background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.8));
-    }
-
-    /* Reasons */
-    .section-mini-title {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: 0.85rem;
-      color: var(--text-dark);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      margin-bottom: 12px;
-    }
-
-    /* ── SIDEBAR ── */
-    .sidebar-stack { display: flex; flex-direction: column; gap: 20px; }
-
-    .sidebar-card { padding: 24px 22px; }
-
-    .red-flags-wrap {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-    }
-
-    /* Action buttons */
-    .actions-card {
-      padding: 24px 22px;
-    }
-
-    .action-btn-row {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .share-img-btn, .try-again-btn, .history-btn {
-      width: 100%;
-      justify-content: center;
-    }
-
-    /* Share preview */
-    .share-toast-img {
-      width: 100%;
-      border-radius: var(--radius-sm);
-      margin-top: 10px;
-      border: 1px solid var(--light-gray);
-      display: none;
-    }
-
-    /* Empty/Error states */
-    .no-result {
-      text-align: center;
-      padding: 80px 20px;
-    }
-
-    .no-result-icon {
-      font-size: 56px;
-      margin-bottom: 20px;
-    }
-
-    @media (max-width: 820px) {
-      .result-grid { grid-template-columns: 1fr; }
-      .confidence-big { text-align: left; }
-    }
-  </style>
+<script src="https://cdn.jsdelivr.net/npm/dom-to-image-more@2.8.0/dist/dom-to-image-more.min.js"></script>
 </head>
 <body>
-  <div class="noise-layer"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="scan-line"></div>
+  <canvas id="particles-canvas"></canvas>
 
   <div class="page-wrapper">
-    <nav>
-      <div class="nav-inner">
-        <a href="index.html" class="nav-logo">
-          <div class="logo-icon">🛡</div>
-          <span>Truth<span style="color:var(--coral)">Lens</span></span>
-        </a>
-        <ul class="nav-links">
-          <li><a href="index.html">Home</a></li>
-          <li><a href="analyze.html">Analyze</a></li>
-          <li><a href="history.html">History</a></li>
-        </ul>
+    <nav class="navbar">
+      <a href="index.html" class="nav-logo">
+        <div class="logo-icon">🔍</div>
+        <span class="logo-text">TruthLens</span>
+      </a>
+      <div class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="analyze.html">Analyze</a>
+        <a href="history.html">History</a>
       </div>
     </nav>
 
-    <div class="result-page">
-      <div class="container">
+    <div class="result-container">
+      <div class="page-header fade-up">
+        <div class="holo-badge">Analysis Complete</div>
+        <h1 class="page-title">Your Result</h1>
+      </div>
 
-        <!-- Page Header -->
-        <div style="margin-bottom:36px;" class="page-enter">
-          <div class="section-label">Analysis Complete</div>
-          <h1 class="section-title">Your <span>Result</span></h1>
+      <!-- No result fallback -->
+      <div id="no-result" style="display:none;">
+        <div class="empty-state glass-card" style="padding:60px 40px;">
+          <div class="empty-icon">🔍</div>
+          <div class="empty-title">No Result Found</div>
+          <div class="empty-desc">It looks like you haven't analyzed anything yet, or the result has expired.</div>
+          <a href="analyze.html" class="btn-primary">Analyze an Article</a>
+        </div>
+      </div>
+
+      <!-- Result Card -->
+      <div class="glass-card fade-up" id="result-card" style="display:none;">
+        <div class="holo-grid"></div>
+
+        <!-- Verdict -->
+        <div class="verdict-section" id="verdict-section">
+          <span class="verdict-icon" id="verdict-icon"></span>
+          <div class="verdict-label">AI Verdict</div>
+          <div class="verdict-value" id="verdict-value"></div>
+          <div class="confidence-text" id="confidence-text"></div>
         </div>
 
-        <!-- No result fallback -->
-        <div id="no-result" class="no-result" style="display:none;">
-          <div class="no-result-icon">🔍</div>
-          <h2 style="font-family:var(--font-display); font-weight:700; font-size:1.5rem; color:var(--text-dark); margin-bottom:10px;">No Result Found</h2>
-          <p style="color:var(--text-soft); margin-bottom:28px;">It looks like you haven't analyzed any article yet.</p>
-          <a href="analyze.html" class="btn btn-primary">Analyze an Article →</a>
-        </div>
-
-        <!-- Result content -->
-        <div id="result-content" style="display:none;">
-          <div class="result-grid">
-
-            <!-- MAIN CARD -->
-            <div id="result-card" class="card main-result-card page-enter">
-              <div class="verdict-header">
-                <div class="verdict-left">
-                  <div class="verdict-word" id="verdict-word">—</div>
-                  <span class="verdict-chip" id="verdict-chip">—</span>
-                </div>
-                <div class="confidence-big">
-                  <div class="confidence-num" id="confidence-num">—</div>
-                  <div class="confidence-label">Confidence Score</div>
-                </div>
-              </div>
-
-              <div class="meter-section">
-                <div class="meter-labels">
-                  <span>Credibility</span>
-                  <span id="meter-label-pct"></span>
-                </div>
-                <div class="meter-track">
-                  <div class="meter-fill" id="meter-fill" style="width:0%;"></div>
-                </div>
-              </div>
-
-              <div class="snippet-box" id="article-snippet"></div>
-
-              <!-- Reasons -->
-              <div class="section-mini-title">📋 Key Reasons</div>
-              <div id="reasons-list"></div>
-            </div>
-
-            <!-- SIDEBAR -->
-            <div class="sidebar-stack">
-
-              <!-- Red Flags -->
-              <div class="card sidebar-card page-enter" style="animation-delay:0.12s;">
-                <div class="section-mini-title">🚩 Red Flags Detected</div>
-                <div class="red-flags-wrap" id="red-flags-wrap">
-                  <span style="font-size:0.82rem; color:var(--text-soft);">None detected</span>
-                </div>
-              </div>
-
-              <!-- Verdict Summary -->
-              <div class="card sidebar-card page-enter" style="animation-delay:0.2s;" id="summary-card">
-                <div class="section-mini-title">📊 Verdict Summary</div>
-                <div id="verdict-summary-text" style="font-size:0.88rem; color:var(--text-mid); line-height:1.6;"></div>
-              </div>
-
-              <!-- Actions -->
-              <div class="card actions-card page-enter" style="animation-delay:0.28s;">
-                <div class="section-mini-title">⚡ Actions</div>
-                <div class="action-btn-row">
-                  <button class="btn btn-primary share-img-btn" id="share-btn">
-                    📤 Share as Image
-                  </button>
-                  <a href="analyze.html" class="btn btn-secondary try-again-btn">
-                    🔄 Analyze Another
-                  </a>
-                  <a href="history.html" class="btn btn-secondary history-btn">
-                    📜 View History
-                  </a>
-                </div>
-                <img id="share-preview" class="share-toast-img" alt="Shared result" />
-              </div>
-
-            </div>
+        <!-- Credibility Meter -->
+        <div class="meter-section">
+          <div class="meter-header">
+            <span class="meter-title">Credibility Meter</span>
+            <span class="meter-score" id="meter-score"></span>
+          </div>
+          <div class="meter-track">
+            <div class="meter-fill" id="meter-fill"></div>
+          </div>
+          <div class="meter-scale">
+            <span>0% Fake</span>
+            <span>50% Uncertain</span>
+            <span>100% Real</span>
           </div>
         </div>
 
+        <div class="divider"></div>
+
+        <!-- Reasons -->
+        <div class="reasons-section">
+          <div class="section-heading">Reason Breakdown</div>
+          <div id="reasons-list"></div>
+        </div>
+
+        <!-- Red Flags -->
+        <div class="flags-section" id="flags-section" style="display:none;">
+          <div class="section-heading">Red Flags Detected</div>
+          <div class="flag-chips" id="flags-list"></div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Share & Actions -->
+        <div class="share-section">
+          <button class="btn-share" id="share-btn" onclick="shareResult()">
+            📤 Download as Image
+          </button>
+          <a href="analyze.html" class="btn-share">
+            🔄 Analyze Another
+          </a>
+          <a href="history.html" class="btn-share">
+            📜 View History
+          </a>
+        </div>
       </div>
     </div>
 
-    <footer>
-      Built with ❤️ for <span>OceanLab × CHARUSAT Hacks 2026</span> · TruthLens
+    <footer class="footer">
+      TruthLens &nbsp;·&nbsp; OceanLab × CHARUSAT Hacks 2026
     </footer>
   </div>
 
   <div class="toast" id="toast"></div>
 
-  <script src="share.js"></script>
+  <script src="js/share.js"></script>
   <script>
-    function showToast(msg, duration = 3000) {
-      const t = document.getElementById('toast');
-      t.textContent = msg;
-      t.classList.add('show');
-      setTimeout(() => t.classList.remove('show'), duration);
+    // Particles
+    const canvas = document.getElementById('particles-canvas');
+    const ctx = canvas.getContext('2d');
+    let pts = [];
+    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+    resize(); window.addEventListener('resize', resize);
+    for (let i = 0; i < 35; i++) {
+      pts.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random()*1+0.3, vx:(Math.random()-0.5)*0.2, vy:(Math.random()-0.5)*0.2, alpha:Math.random()*0.3+0.05, hue:200+Math.random()*60 });
     }
-
-    function getVerdictMeta(verdict) {
-      if (verdict === 'Real') return {
-        color: 'var(--teal)',
-        chipClass: 'verdict-badge-real',
-        chipIcon: '✅',
-        meterClass: 'meter-real',
-        summary: 'This article appears credible based on language patterns, source consistency, and factual alignment. Always verify with multiple sources.'
-      };
-      if (verdict === 'Fake') return {
-        color: 'var(--coral)',
-        chipClass: 'verdict-badge-fake',
-        chipIcon: '🚨',
-        meterClass: 'meter-fake',
-        summary: 'This article shows strong indicators of misinformation. Exercise caution before sharing and cross-check with trusted outlets.'
-      };
-      return {
-        color: 'var(--amber)',
-        chipClass: 'verdict-badge-uncertain',
-        chipIcon: '⚠️',
-        meterClass: 'meter-uncertain',
-        summary: 'The article contains mixed signals. Some claims may be accurate while others are questionable. Further fact-checking is recommended.'
-      };
+    function draw() {
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      pts.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; if(p.x<0)p.x=canvas.width; if(p.x>canvas.width)p.x=0; if(p.y<0)p.y=canvas.height; if(p.y>canvas.height)p.y=0; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fillStyle=`hsla(${p.hue},100%,70%,${p.alpha})`; ctx.fill(); });
+      requestAnimationFrame(draw);
     }
+    draw();
 
-    function loadResult() {
-      const raw = localStorage.getItem('truthlens_result');
-      const articleText = localStorage.getItem('truthlens_article') || '';
-
+    // Load result from localStorage
+    window.addEventListener('DOMContentLoaded', () => {
+      const raw = localStorage.getItem('tl_result');
       if (!raw) {
         document.getElementById('no-result').style.display = 'block';
         return;
       }
 
       let data;
-      try { data = JSON.parse(raw); } catch (e) {
+      try { data = JSON.parse(raw); } catch(e) {
         document.getElementById('no-result').style.display = 'block';
         return;
       }
 
-      document.getElementById('result-content').style.display = 'block';
+      const { verdict, confidenceScore, reasons, redFlags } = data;
+      document.getElementById('result-card').style.display = 'block';
 
-      const { verdict, confidenceScore, reasons = [], redFlags = [] } = data;
-      const meta = getVerdictMeta(verdict);
+      // Verdict section
+      const verdictClass = verdict.toLowerCase();
+      const icons = { real: '✅', fake: '❌', uncertain: '⚠️' };
+      const section = document.getElementById('verdict-section');
+      section.classList.add(verdictClass);
 
-      // Verdict word
-      const vw = document.getElementById('verdict-word');
-      vw.textContent = verdict;
-      vw.style.color = meta.color;
+      document.getElementById('verdict-icon').textContent = icons[verdictClass] || '🔍';
+      const vv = document.getElementById('verdict-value');
+      vv.textContent = verdict;
+      vv.classList.add(verdictClass);
 
-      // Chip
-      const chip = document.getElementById('verdict-chip');
-      chip.textContent = `${meta.chipIcon} ${verdict}`;
-      chip.className = `verdict-chip ${meta.chipClass}`;
-
-      // Confidence
-      document.getElementById('confidence-num').textContent = `${confidenceScore}%`;
-      document.getElementById('confidence-num').style.color = meta.color;
-      document.getElementById('meter-label-pct').textContent = `${confidenceScore}%`;
+      document.getElementById('confidence-text').textContent = `${confidenceScore}% confidence`;
 
       // Meter
-      setTimeout(() => {
-        const fill = document.getElementById('meter-fill');
-        fill.style.width = `${confidenceScore}%`;
-        fill.className = `meter-fill ${meta.meterClass}`;
-      }, 300);
-
-      // Snippet
-      const snippet = articleText.trim().substring(0, 220);
-      document.getElementById('article-snippet').textContent = snippet ? `"${snippet}…"` : 'Article text not available.';
+      const meterFill = document.getElementById('meter-fill');
+      meterFill.classList.add(verdictClass);
+      document.getElementById('meter-score').textContent = `${confidenceScore}%`;
+      document.getElementById('meter-score').style.color = verdictClass === 'real' ? 'var(--real)' : verdictClass === 'fake' ? 'var(--fake)' : 'var(--uncertain)';
+      setTimeout(() => { meterFill.style.width = confidenceScore + '%'; }, 200);
 
       // Reasons
       const reasonsList = document.getElementById('reasons-list');
-      if (reasons.length === 0) {
-        reasonsList.innerHTML = '<div class="reason-item"><div class="reason-icon reason-icon-teal">ℹ</div>No specific reasons provided.</div>';
+      if (reasons && reasons.length) {
+        reasons.forEach((r, i) => {
+          const div = document.createElement('div');
+          div.className = 'reason-item';
+          div.style.animationDelay = (i * 0.1 + 0.2) + 's';
+          div.innerHTML = `<div class="reason-dot"></div><div class="reason-text">${r}</div>`;
+          reasonsList.appendChild(div);
+        });
       } else {
-        reasonsList.innerHTML = reasons.map((r, i) => {
-          const icons = ['reason-icon-teal', 'reason-icon-coral', 'reason-icon-amber'];
-          const emojis = ['✓', '!', '?'];
-          const cls = icons[i % icons.length];
-          return `<div class="reason-item">
-            <div class="reason-icon ${cls}">${emojis[i % emojis.length]}</div>
-            <span>${r}</span>
-          </div>`;
-        }).join('');
+        reasonsList.innerHTML = '<div class="reason-item"><div class="reason-dot"></div><div class="reason-text">No specific reasons provided.</div></div>';
       }
 
-      // Red flags
-      const rfWrap = document.getElementById('red-flags-wrap');
-      if (redFlags.length > 0) {
-        rfWrap.innerHTML = redFlags.map(f =>
-          `<span class="red-flag-tag">🚩 ${f}</span>`
-        ).join('');
+      // Red Flags
+      if (redFlags && redFlags.length) {
+        document.getElementById('flags-section').style.display = 'block';
+        const fl = document.getElementById('flags-list');
+        redFlags.forEach(f => {
+          const chip = document.createElement('span');
+          chip.className = 'flag-chip';
+          chip.textContent = f;
+          fl.appendChild(chip);
+        });
       }
-
-      // Summary
-      document.getElementById('verdict-summary-text').textContent = meta.summary;
-    }
-
-    loadResult();
-
-    // Share button
-    document.getElementById('share-btn').addEventListener('click', async () => {
-      const btn = document.getElementById('share-btn');
-      btn.textContent = '⏳ Generating…';
-      btn.disabled = true;
-      try {
-        await shareResult();
-      } catch (e) {
-        showToast('❌ Share failed. Try again.');
-      }
-      btn.textContent = '📤 Share as Image';
-      btn.disabled = false;
     });
+
+    function showToast(msg, type = 'success') {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = `toast ${type} show`;
+      setTimeout(() => { t.className = `toast ${type}`; }, 3000);
+    }
   </script>
 </body>
 </html>
