@@ -5,102 +5,186 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>History — TruthLens</title>
   <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .history-page { padding: 50px 0 80px; }
+
+    .history-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 36px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .filter-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 7px 16px;
+      border-radius: 50px;
+      border: 1.5px solid var(--light-gray);
+      background: rgba(255,255,255,0.7);
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-soft);
+      cursor: pointer;
+      transition: var(--transition);
+      font-family: var(--font-body);
+    }
+
+    .filter-btn:hover { border-color: var(--coral-lt); color: var(--coral); }
+
+    .filter-btn.active {
+      background: linear-gradient(135deg, rgba(255,77,109,0.12), rgba(255,107,53,0.06));
+      border-color: rgba(255,77,109,0.3);
+      color: var(--coral);
+    }
+
+    /* History list */
+    #history-list { min-height: 200px; }
+
+    .history-card-wrap {
+      animation: fadeUp 0.4s cubic-bezier(0.23,1,0.32,1) both;
+    }
+
+    .history-card-wrap:nth-child(1) { animation-delay: 0.05s; }
+    .history-card-wrap:nth-child(2) { animation-delay: 0.10s; }
+    .history-card-wrap:nth-child(3) { animation-delay: 0.15s; }
+    .history-card-wrap:nth-child(4) { animation-delay: 0.20s; }
+    .history-card-wrap:nth-child(5) { animation-delay: 0.25s; }
+
+    .hc-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
+
+    .hc-num {
+      font-family: var(--font-display);
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--mid-gray);
+      width: 22px;
+      flex-shrink: 0;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 72px 20px;
+    }
+
+    .empty-icon { font-size: 56px; margin-bottom: 18px; }
+
+    /* Stats mini bar */
+    .mini-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+
+    .mini-stat-card {
+      padding: 18px 20px;
+      text-align: center;
+    }
+
+    .mini-stat-num {
+      font-family: var(--font-display);
+      font-size: 1.6rem;
+      font-weight: 800;
+      display: block;
+    }
+
+    .mini-stat-lbl {
+      font-size: 0.78rem;
+      color: var(--text-soft);
+      margin-top: 2px;
+    }
+
+    /* Shimmer rows */
+    .shimmer-row {
+      height: 64px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 10px;
+    }
+
+    @media (max-width: 600px) {
+      .mini-stats { grid-template-columns: 1fr 1fr 1fr; }
+      .history-card { flex-wrap: wrap; }
+      .history-date { display: none; }
+    }
+  </style>
 </head>
 <body>
-
-  <div class="orb orb-1"></div>
-  <div class="orb orb-2"></div>
-  <div class="scan-line"></div>
-  <canvas id="particles-canvas"></canvas>
+  <div class="noise-layer"></div>
 
   <div class="page-wrapper">
-
-    <!-- ══ NAVBAR ══ -->
-    <nav class="navbar">
-      <a href="index.html" class="nav-logo">
-        <div class="logo-icon">🔍</div>
-        <span class="logo-text">TruthLens</span>
-      </a>
-      <div class="nav-links">
-        <a href="index.html">Home</a>
-        <a href="analyze.html">Analyze</a>
-        <a href="history.html" class="active">History</a>
+    <nav>
+      <div class="nav-inner">
+        <a href="index.html" class="nav-logo">
+          <div class="logo-icon">🛡</div>
+          <span>Truth<span style="color:var(--coral)">Lens</span></span>
+        </a>
+        <ul class="nav-links">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="analyze.html">Analyze</a></li>
+          <li><a href="history.html" class="active">History</a></li>
+        </ul>
       </div>
     </nav>
 
-    <div class="history-container">
+    <div class="history-page">
+      <div class="container">
 
-      <div class="page-header fade-up">
-        <div class="holo-badge">Analysis Log</div>
-        <h1 class="page-title">Analysis History</h1>
-        <p class="page-desc">All your past fact-checks — verdict, confidence score, and date — in one place.</p>
-      </div>
+        <!-- Header -->
+        <div class="history-header page-enter">
+          <div>
+            <div class="section-label">Past Analyses</div>
+            <h1 class="section-title">Analysis <span>History</span></h1>
+          </div>
 
-      <!-- ── Skeleton loader ── -->
-      <div id="history-loading" style="display:flex;flex-direction:column;gap:14px;">
-        <div style="padding:22px 28px;background:rgba(38,30,20,0.5);border:1px solid var(--border-dim);border-radius:var(--radius-xl);animation:breathe 1.6s ease infinite;">
-          <div style="height:13px;background:var(--border-dim);border-radius:6px;margin-bottom:13px;width:68%;"></div>
-          <div style="height:9px;background:var(--border-dim);border-radius:6px;width:38%;"></div>
+          <div class="filter-row">
+            <button class="filter-btn active" data-filter="all">All</button>
+            <button class="filter-btn" data-filter="Fake">🚨 Fake</button>
+            <button class="filter-btn" data-filter="Real">✅ Real</button>
+            <button class="filter-btn" data-filter="Uncertain">⚠️ Uncertain</button>
+          </div>
         </div>
-        <div style="padding:22px 28px;background:rgba(38,30,20,0.35);border:1px solid var(--border-dim);border-radius:var(--radius-xl);animation:breathe 1.6s ease infinite 0.35s;">
-          <div style="height:13px;background:var(--border-dim);border-radius:6px;margin-bottom:13px;width:78%;"></div>
-          <div style="height:9px;background:var(--border-dim);border-radius:6px;width:44%;"></div>
+
+        <!-- Mini stats -->
+        <div class="mini-stats page-enter">
+          <div class="card mini-stat-card">
+            <span class="mini-stat-num" id="total-count" style="color:var(--coral);">—</span>
+            <div class="mini-stat-lbl">Total</div>
+          </div>
+          <div class="card mini-stat-card">
+            <span class="mini-stat-num" id="fake-count" style="color:var(--coral);">—</span>
+            <div class="mini-stat-lbl">Fake</div>
+          </div>
+          <div class="card mini-stat-card">
+            <span class="mini-stat-num" id="real-count" style="color:var(--teal);">—</span>
+            <div class="mini-stat-lbl">Real</div>
+          </div>
         </div>
-        <div style="padding:22px 28px;background:rgba(38,30,20,0.2);border:1px solid var(--border-dim);border-radius:var(--radius-xl);animation:breathe 1.6s ease infinite 0.7s;">
-          <div style="height:13px;background:var(--border-dim);border-radius:6px;margin-bottom:13px;width:55%;"></div>
-          <div style="height:9px;background:var(--border-dim);border-radius:6px;width:30%;"></div>
+
+        <!-- History list -->
+        <div id="history-list">
+          <!-- Shimmer loading -->
+          <div class="shimmer-row loading-shimmer"></div>
+          <div class="shimmer-row loading-shimmer" style="opacity:0.7;"></div>
+          <div class="shimmer-row loading-shimmer" style="opacity:0.5;"></div>
         </div>
+
       </div>
-      <style>@keyframes breathe { 0%,100%{opacity:0.5;} 50%{opacity:1;} }</style>
+    </div>
 
-      <!-- ── History list ── -->
-      <div class="history-list" id="history-list" style="display:none;"></div>
-
-      <!-- ── Empty state ── -->
-      <div class="empty-state glass-card" id="history-empty" style="display:none;">
-        <div class="empty-icon">📭</div>
-        <div class="empty-title">No analyses yet</div>
-        <div class="empty-desc">Start fact-checking to build your personal history.</div>
-        <a href="analyze.html" class="btn-primary" style="margin-top:4px;">Analyze Your First Article</a>
-      </div>
-
-      <!-- ── Error state ── -->
-      <div class="empty-state glass-card" id="history-error" style="display:none;">
-        <div class="empty-icon">⚠️</div>
-        <div class="empty-title">Couldn't Load History</div>
-        <div class="empty-desc">Something went wrong fetching your history. Please try again.</div>
-        <button class="btn-secondary" onclick="loadHistory()" style="margin-top:4px;">Retry</button>
-      </div>
-
-    </div><!-- /.history-container -->
-
-    <footer class="footer">
-      TruthLens &nbsp;·&nbsp; OceanLab × CHARUSAT Hacks 2026
+    <footer>
+      Built with ❤️ for <span>OceanLab × CHARUSAT Hacks 2026</span> · TruthLens
     </footer>
+  </div>
 
-  </div><!-- /.page-wrapper -->
-
-  <script src="js/history.js"></script>
-  <script>
-    /* ── Particles ── */
-    (function() {
-      const canvas = document.getElementById('particles-canvas');
-      const ctx = canvas.getContext('2d');
-      let W, H, pts = [];
-      function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
-      resize(); window.addEventListener('resize', resize);
-      const cols = ['rgba(200,219,190,','rgba(237,228,224,','rgba(159,135,114,'];
-      for (let i = 0; i < 32; i++) {
-        pts.push({ x:Math.random()*window.innerWidth, y:Math.random()*window.innerHeight, r:Math.random()*1.1+0.3, vx:(Math.random()-0.5)*0.2, vy:(Math.random()-0.5)*0.2, alpha:Math.random()*0.22+0.05, col:cols[Math.floor(Math.random()*cols.length)] });
-      }
-      function draw() {
-        ctx.clearRect(0,0,W,H);
-        pts.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; if(p.x<0)p.x=W; if(p.x>W)p.x=0; if(p.y<0)p.y=H; if(p.y>H)p.y=0; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fillStyle=p.col+p.alpha+')'; ctx.fill(); });
-        requestAnimationFrame(draw);
-      }
-      draw();
-    })();
-  </script>
-
+  <script src="history.js"></script>
 </body>
 </html>

@@ -1,118 +1,145 @@
-// public/js/history.js
-// Fetches analysis history from GET /api/history?userId=...
-// and renders a card for each entry, newest first.
+// history.js — Fetches and displays analysis history
 
-const USER_ID_KEY = 'tl_user_id';
+(function () {
+  let allHistory = [];
+  let currentFilter = 'all';
 
-/**
- * Generate or reuse the same userId as analyze.js.
- * Must stay identical to the getUserId() in analyze.js.
- */
-function getUserId() {
-  let userId = localStorage.getItem(USER_ID_KEY);
-  if (!userId) {
-    // User hasn't run an analysis yet — generate one for future use
-    userId = 'u_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
-    localStorage.setItem(USER_ID_KEY, userId);
+  const USER_ID_KEY = 'tl_user_id';
+
+  // ── USER ID ──
+  // Must stay identical to getUserId() in analyze.js so IDs always match
+  function getUserId() {
+    let userId = localStorage.getItem(USER_ID_KEY);
+    if (!userId) {
+      userId = 'u_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+      localStorage.setItem(USER_ID_KEY, userId);
+    }
+    return userId;
   }
-  return userId;
-}
 
-/* ── Formatting helpers ── */
+  function formatDate(ts) {
+    if (!ts) return '';
+    const d = new Date(ts);
+    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
 
-function formatDate(timestamp) {
-  if (!timestamp) return '—';
-  const d = new Date(timestamp);
-  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-    + ' · '
-    + d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-}
+  function getVerdictDotClass(verdict) {
+    if (verdict === 'Real') return 'dot-real';
+    if (verdict === 'Fake') return 'dot-fake';
+    return 'dot-uncertain';
+  }
 
-function verdictClass(verdict) {
-  return (verdict || 'uncertain').toLowerCase();
-}
+  function getVerdictColor(verdict) {
+    if (verdict === 'Real') return 'var(--teal)';
+    if (verdict === 'Fake') return 'var(--coral)';
+    return 'var(--amber)';
+  }
 
-function verdictIcon(verdict) {
-  const icons = { real: '✅', fake: '❌', uncertain: '⚠️' };
-  return icons[verdictClass(verdict)] || '❓';
-}
+  function getVerdictIcon(verdict) {
+    if (verdict === 'Real') return '✅';
+    if (verdict === 'Fake') return '🚨';
+    return '⚠️';
+  }
 
-function scoreColor(verdict) {
-  const v = verdictClass(verdict);
-  if (v === 'real')      return 'var(--real)';
-  if (v === 'fake')      return 'var(--fake)';
-  return 'var(--uncertain)';
-}
+  function renderHistory(items) {
+    const container = document.getElementById('history-list');
 
-/* ── Card HTML builder ── */
-function buildCard(item, index) {
-  const vc      = verdictClass(item.verdict);
-  const snippet = (item.article_text || '').slice(0, 200).trim();
-  const display = snippet.length === 200 ? snippet + '…' : (snippet || 'No text available');
-  const score   = item.confidence_score ?? '—';
-  const date    = formatDate(item.created_at);
-  const color   = scoreColor(item.verdict);
-
-  return `
-    <div class="history-card glass-card fade-up" style="animation-delay:${index * 0.07}s;">
-      <div style="min-width:0;">
-        <div class="history-snippet">${display}</div>
-        <div class="history-meta">
-          <span class="verdict-badge ${vc}">${verdictIcon(item.verdict)} ${item.verdict || 'Unknown'}</span>
-          <span class="history-date">🕐 ${date}</span>
-        </div>
-      </div>
-      <div class="history-score">
-        <div class="score-big" style="color:${color};">${score}${typeof score === 'number' ? '%' : ''}</div>
-        <div class="score-label">Confidence</div>
-      </div>
-    </div>
-  `;
-}
-
-/* ── Main loader ── */
-async function loadHistory() {
-  const listEl    = document.getElementById('history-list');
-  const loadingEl = document.getElementById('history-loading');
-  const emptyEl   = document.getElementById('history-empty');
-  const errorEl   = document.getElementById('history-error');
-
-  // Reset all states
-  listEl.style.display    = 'none';
-  emptyEl.style.display   = 'none';
-  errorEl.style.display   = 'none';
-  loadingEl.style.display = 'flex';
-
-  const userId = getUserId();
-
-  try {
-    const response = await fetch(`/api/history?userId=${encodeURIComponent(userId)}`);
-
-    if (!response.ok) throw new Error(`Server error: ${response.status}`);
-
-    const history = await response.json();
-
-    loadingEl.style.display = 'none';
-
-    if (!Array.isArray(history) || history.length === 0) {
-      emptyEl.style.display = 'block';
+    if (!items || items.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">📭</div>
+          <h3 style="font-family:var(--font-display); font-weight:700; font-size:1.3rem; color:var(--text-dark); margin-bottom:10px;">
+            ${currentFilter === 'all' ? 'No Analyses Yet' : `No ${currentFilter} Articles`}
+          </h3>
+          <p style="color:var(--text-soft); margin-bottom:28px;">
+            ${currentFilter === 'all'
+              ? 'Your analysis history will appear here once you start checking articles.'
+              : `You have no articles flagged as "${currentFilter}" yet.`}
+          </p>
+          <a href="analyze.html" class="btn btn-primary">Start Analyzing →</a>
+        </div>`;
       return;
     }
 
-    // Sort newest first
-    const sorted = [...history].sort(
-      (a, b) => new Date(b.created_at) - new Date(a.created_at)
-    );
+    container.innerHTML = items.map((item, idx) => {
+      const snippet = (item.article_text || '').substring(0, 100).trim();
+      const dot = getVerdictDotClass(item.verdict);
+      const color = getVerdictColor(item.verdict);
+      const icon = getVerdictIcon(item.verdict);
+      const date = formatDate(item.created_at);
 
-    listEl.innerHTML    = sorted.map(buildCard).join('');
-    listEl.style.display = 'flex';
-
-  } catch (err) {
-    console.error('[TruthLens] History error:', err);
-    loadingEl.style.display = 'none';
-    errorEl.style.display   = 'block';
+      return `
+        <div class="history-card-wrap">
+          <div class="history-card card">
+            <div class="hc-left">
+              <span class="hc-num">#${idx + 1}</span>
+              <div class="history-verdict-dot ${dot}"></div>
+              <span class="history-snippet" title="${(item.article_text || '').substring(0, 300)}">
+                ${snippet ? snippet + '…' : '(No text preview)'}
+              </span>
+            </div>
+            <div class="history-meta">
+              <span class="history-score" style="color:${color};">
+                ${icon} ${item.verdict}
+              </span>
+              <span class="history-score" style="color:var(--text-soft); font-size:0.82rem;">
+                ${item.confidence_score != null ? item.confidence_score + '%' : ''}
+              </span>
+              <span class="history-date">${date}</span>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
   }
-}
 
-/* ── Auto-load on page ready ── */
-document.addEventListener('DOMContentLoaded', loadHistory);
+  function updateMiniStats(items) {
+    const total = items.length;
+    const fake = items.filter(i => i.verdict === 'Fake').length;
+    const real = items.filter(i => i.verdict === 'Real').length;
+
+    document.getElementById('total-count').textContent = total;
+    document.getElementById('fake-count').textContent = fake;
+    document.getElementById('real-count').textContent = real;
+  }
+
+  function applyFilter(filter) {
+    currentFilter = filter;
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.filter === filter);
+    });
+
+    const filtered = filter === 'all'
+      ? allHistory
+      : allHistory.filter(i => i.verdict === filter);
+    renderHistory(filtered);
+  }
+
+  async function loadHistory() {
+    try {
+      const userId = getUserId();
+      const res = await fetch(`/api/history?userId=${encodeURIComponent(userId)}`);
+      if (!res.ok) throw new Error('Failed to load history');
+      const data = await res.json();
+      allHistory = Array.isArray(data) ? data : [];
+      updateMiniStats(allHistory);
+      renderHistory(allHistory);
+    } catch (err) {
+      document.getElementById('history-list').innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">⚠️</div>
+          <h3 style="font-family:var(--font-display); font-weight:700; font-size:1.2rem; color:var(--text-dark); margin-bottom:10px;">
+            Could Not Load History
+          </h3>
+          <p style="color:var(--text-soft); margin-bottom:24px;">${err.message}</p>
+          <button onclick="location.reload()" class="btn btn-secondary">Try Again</button>
+        </div>`;
+    }
+  }
+
+  // Filter buttons
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => applyFilter(btn.dataset.filter));
+  });
+
+  loadHistory();
+})();
