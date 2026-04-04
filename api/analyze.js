@@ -1,207 +1,188 @@
-// analyze.js — Handles article submission, cooldown, loading states, image upload
+const { createClient } = require('@supabase/supabase-js');
 
-(function () {
-  const textarea = document.getElementById('article-textarea');
-  const analyzeBtn = document.getElementById('analyze-btn');
-  const charCount = document.getElementById('char-count');
-  const charHint = document.getElementById('char-hint');
-  const cooldownWrap = document.getElementById('cooldown-wrap');
-  const cooldownText = document.getElementById('cooldown-text');
-  const cooldownFill = document.getElementById('cooldown-fill');
-  const errorMsg = document.getElementById('error-msg');
-  const loadingOverlay = document.getElementById('loading-overlay');
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY
+);
 
-  const MIN_CHARS = 80;
-  const COOLDOWN_MS = 3000;
-  const USER_ID_KEY = 'tl_user_id';
-  let isCoolingDown = false;
-  let isLoading = false;
+module.exports = async (req, res) => {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  // ── USER ID ──
-  // Generates or reuses a persistent browser userId.
-  // Same key used in history.js so IDs always match.
-  function getUserId() {
-    let userId = localStorage.getItem(USER_ID_KEY);
-    if (!userId) {
-      userId = 'u_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
-      localStorage.setItem(USER_ID_KEY, userId);
-    }
-    return userId;
-  }
+  const { articleText, imageBase64, inputType, userId } = req.body;
 
-  // ── CHAR COUNT ──
-  textarea.addEventListener('input', () => {
-    const len = textarea.value.trim().length;
-    charCount.textContent = `${len} characters`;
-    if (len >= MIN_CHARS) {
-      charHint.textContent = '✓ Ready to analyze';
-      charHint.style.color = 'var(--teal)';
-    } else {
-      charHint.textContent = `${MIN_CHARS - len} more characters needed`;
-      charHint.style.color = 'var(--text-soft)';
-    }
-  });
+  let finalText = articleText;
 
-  // ── LOADING STEPS ANIMATION ──
-  function animateLoadingSteps() {
-    const steps = ['ls-1', 'ls-2', 'ls-3', 'ls-4'];
-    let current = 0;
-
-    steps.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) { el.classList.remove('active', 'done'); }
-    });
-
-    const el0 = document.getElementById(steps[0]);
-    if (el0) el0.classList.add('active');
-
-    const interval = setInterval(() => {
-      const prev = document.getElementById(steps[current]);
-      if (prev) { prev.classList.remove('active'); prev.classList.add('done'); }
-      current++;
-      if (current >= steps.length) { clearInterval(interval); return; }
-      const next = document.getElementById(steps[current]);
-      if (next) next.classList.add('active');
-    }, 900);
-  }
-
-  // ── COOLDOWN ──
-  function startCooldown() {
-    isCoolingDown = true;
-    cooldownWrap.style.display = 'block';
-    analyzeBtn.disabled = true;
-    analyzeBtn.classList.add('btn-disabled');
-
-    const start = Date.now();
-    const tick = setInterval(() => {
-      const elapsed = Date.now() - start;
-      const remaining = Math.max(0, COOLDOWN_MS - elapsed);
-      const pct = (remaining / COOLDOWN_MS) * 100;
-
-      cooldownFill.style.width = `${pct}%`;
-      cooldownText.textContent = `Please wait ${Math.ceil(remaining / 1000)}s…`;
-
-      if (remaining <= 0) {
-        clearInterval(tick);
-        isCoolingDown = false;
-        cooldownWrap.style.display = 'none';
-        analyzeBtn.disabled = false;
-        analyzeBtn.classList.remove('btn-disabled');
-        document.getElementById('btn-icon').textContent = '⚡';
-        document.getElementById('btn-text').textContent = 'Analyze Now';
-      }
-    }, 80);
-  }
-
-  // ── SHOW ERROR ──
-  function showError(msg) {
-    errorMsg.innerHTML = `
-      <div style="
-        padding: 12px 16px;
-        background: rgba(255,77,109,0.08);
-        border: 1px solid rgba(255,77,109,0.2);
-        border-radius: var(--radius-xs);
-        font-size: 0.85rem;
-        color: var(--coral);
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      ">
-        ⚠️ ${msg}
-      </div>`;
-  }
-
-  function clearError() {
-    errorMsg.innerHTML = '';
-  }
-
-  // ── GET IMAGE BASE64 ──
-  // Reads the image preview src if user uploaded an image
-  function getImageData() {
-    const imgPreview = document.getElementById('img-preview');
-    if (imgPreview && imgPreview.style.display !== 'none' && imgPreview.src && imgPreview.src.startsWith('data:image')) {
-      return imgPreview.src;
-    }
-    return null;
-  }
-
-  // ── SUBMIT ──
-  analyzeBtn.addEventListener('click', async () => {
-    if (isCoolingDown || isLoading) return;
-
-    clearError();
-
-    const articleText = textarea.value.trim();
-    const imageBase64 = getImageData();
-
-    // Validate — need either text or image
-    if (!imageBase64 && articleText.length < MIN_CHARS) {
-      showError(`Please enter at least ${MIN_CHARS} characters or upload an image.`);
-      textarea.focus();
-      return;
-    }
-
-    // Determine input type
-    const inputType = imageBase64 ? 'image' : 'text';
-
-    // Start loading
-    isLoading = true;
-    loadingOverlay.classList.add('active');
-    animateLoadingSteps();
-    document.getElementById('btn-icon').textContent = '⏳';
-    document.getElementById('btn-text').textContent = 'Analyzing…';
+  // ─── IMAGE FEATURE (Gemini Vision) ───────────────────────────────────────
+  if (inputType === 'image') {
+    if (!imageBase64) return res.status(400).json({ error: 'Image data is required' });
 
     try {
-      // Build request body
-      const requestBody = {
-        userId: getUserId(),
-        inputType
-      };
+      const geminiResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${process.env.GEMINI_API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                {
+                  inlineData: {
+                    mimeType: 'image/jpeg',
+                    data: imageBase64.replace(/^data:image\/\w+;base64,/, "")
+                  }
+                },
+                {
+                  text: 'Extract all the news text from this image exactly. Return only the extracted text.'
+                }
+              ]
+            }]
+          })
+        }
+      );
 
-      if (inputType === 'image') {
-        requestBody.imageBase64 = imageBase64;
-      } else {
-        requestBody.articleText = articleText;
+      const geminiData = await geminiResponse.json();
+
+      if (geminiData.error) {
+        console.error('Gemini API Error:', geminiData.error);
+        return res.status(500).json({ error: 'Gemini API failed to process image.' });
       }
 
-      const response = await fetch('/api/analyze', {
+      const extractedText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (!extractedText) {
+        return res.status(400).json({ error: 'Could not extract text from image. Please try a clearer image.' });
+      }
+
+      finalText = extractedText;
+
+    } catch (imgError) {
+      console.error('Gemini image error:', imgError);
+      return res.status(503).json({ error: 'Image processing failed.' });
+    }
+  }
+  // ─── END IMAGE FEATURE ────────────────────────────────────────────────────
+
+  if (!finalText) return res.status(400).json({ error: 'Article text is required' });
+
+  try {
+    // STEP 1: THE LIBRARIAN — Extract Claims
+    const claimExtraction = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          { role: 'system', content: 'Extract 3 factual claims. Return ONLY a JSON array: ["c1", "c2", "c3"]' },
+          { role: 'user', content: finalText }
+        ],
+        temperature: 0.1
+      })
+    });
+
+    const claimData = await claimExtraction.json();
+    let claims = [];
+    try {
+      claims = JSON.parse(claimData.choices[0].message.content);
+    } catch(e) {
+      claims = [finalText.substring(0, 200)];
+    }
+
+    // STEP 2: THE RESEARCHER — Search via Tavily
+    const searchPromises = claims.map(claim =>
+      fetch('https://api.tavily.com/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
-      });
+        body: JSON.stringify({
+          api_key: process.env.TAVILY_API_KEY,
+          query: `fact check: ${claim}`,
+          search_depth: 'basic',
+          max_results: 2
+        })
+      }).then(r => r.json())
+    );
 
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error || `Server error: ${response.status}`);
-      }
+    const allSearchData = await Promise.all(searchPromises);
+    const searchContext = allSearchData
+      .flatMap(data => data.results || [])
+      .map(r => `Source: ${r.url}\nContent: ${r.content}`)
+      .join('\n\n');
 
-      const result = await response.json();
+    // STEP 3: THE JUDGE — Final verdict
+    const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          {
+            role: 'system',
+            content: `You are an expert fact-checker. Compare the article against web evidence carefully.
 
-      // Save to localStorage — keys match result.html exactly
-      localStorage.setItem('truthlens_result', JSON.stringify(result));
-      localStorage.setItem('truthlens_article', articleText || '[Image upload]');
+VERDICT RULES:
+- Search Evidence contradicts article → "Fake"
+- Search Evidence supports article → "Real"
+- Mixed or insufficient evidence → "Uncertain"
 
-      // Small delay so loading animation feels complete
-      await new Promise(r => setTimeout(r, 600));
+CREDIBILITY SCORE (must match verdict):
+- "Fake" → 0 to 35
+- "Uncertain" → 36 to 64
+- "Real" → 65 to 100
 
-      // Redirect to result page
-      window.location.href = 'result.html';
+REASONS: Must be specific to THIS article. Reference actual claims, names, phrases from the article. Reference search evidence sources where possible. Never generic.
 
-    } catch (err) {
-      loadingOverlay.classList.remove('active');
-      isLoading = false;
-      showError(err.message || 'Analysis failed. Please try again.');
-      document.getElementById('btn-icon').textContent = '⚡';
-      document.getElementById('btn-text').textContent = 'Analyze Now';
-      startCooldown();
+RED FLAGS: Only for Fake/Uncertain. Exact suspicious phrases from article. Empty array for Real.
+
+Return ONLY this JSON with no extra text:
+{"verdict": "Real" or "Fake" or "Uncertain", "confidenceScore": integer, "reasons": ["specific reason 1", "specific reason 2", "specific reason 3"], "redFlags": ["phrase1", "phrase2"]}`
+          },
+          {
+            role: 'user',
+            content: `USER ARTICLE: ${finalText}\n\nEVIDENCE:\n${searchContext || 'No web results found.'}`
+          }
+        ],
+        temperature: 0.1
+      })
+    });
+
+    const groqData = await groqResponse.json();
+    const result = JSON.parse(groqData.choices[0].message.content);
+
+    // Validate verdict first
+    if (!['Real', 'Fake', 'Uncertain'].includes(result.verdict)) result.verdict = 'Uncertain';
+
+    // Safety net: force confidenceScore into correct range
+    if (result.verdict === 'Fake' && result.confidenceScore > 35) {
+      result.confidenceScore = Math.floor(Math.random() * 21) + 10;
+    } else if (result.verdict === 'Uncertain' && (result.confidenceScore < 36 || result.confidenceScore > 64)) {
+      result.confidenceScore = Math.floor(Math.random() * 29) + 36;
+    } else if (result.verdict === 'Real' && result.confidenceScore < 65) {
+      result.confidenceScore = Math.floor(Math.random() * 26) + 70;
     }
-  });
 
-  // ── ALLOW SUBMIT WITH Ctrl+Enter ──
-  textarea.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-      analyzeBtn.click();
-    }
-  });
+    // STEP 4: Save to Supabase
+    await supabase.from('analyses').insert([{
+      user_id: userId || 'anon',
+      article_text: finalText.substring(0, 500),
+      verdict: result.verdict,
+      confidence_score: result.confidenceScore,
+      reasons: result.reasons,
+      red_flags: result.redFlags || [],
+      input_type: inputType || 'text'
+    }]);
 
-})();
+    // STEP 5: Update Stats
+    await supabase.rpc('increment_stats', { verdict_value: result.verdict });
+
+    res.json(result);
+
+  } catch (error) {
+    console.error('Backend Error:', error);
+    res.status(500).json({ error: 'Server error during analysis.' });
+  }
+};
