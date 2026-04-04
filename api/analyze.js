@@ -41,7 +41,7 @@ module.exports = async (req, res) => {
       );
 
       const geminiData = await geminiResponse.json();
-      
+
       if (geminiData.error) {
         console.error('Gemini API Error:', geminiData.error);
         return res.status(500).json({ error: 'Gemini API failed to process image.' });
@@ -122,7 +122,24 @@ module.exports = async (req, res) => {
         messages: [
           {
             role: 'system',
-            content: `Return ONLY JSON: {"verdict": "Real"|"Fake"|"Uncertain", "confidenceScore": 0-100, "reasons": [], "redFlags": []}`
+            content: `You are an expert fact-checker. Compare the article against web evidence carefully.
+
+VERDICT RULES:
+- Search Evidence contradicts article → "Fake"
+- Search Evidence supports article → "Real"
+- Mixed or insufficient evidence → "Uncertain"
+
+CREDIBILITY SCORE (must match verdict):
+- "Fake" → 0 to 35
+- "Uncertain" → 36 to 64
+- "Real" → 65 to 100
+
+REASONS: Must be specific to THIS article. Reference actual claims, names, phrases from the article. Reference search evidence sources where possible. Never generic.
+
+RED FLAGS: Only for Fake/Uncertain. Exact suspicious phrases from article. Empty array for Real.
+
+Return ONLY this JSON with no extra text:
+{"verdict": "Real" or "Fake" or "Uncertain", "confidenceScore": integer, "reasons": ["specific reason 1", "specific reason 2", "specific reason 3"], "redFlags": ["phrase1", "phrase2"]}`
           },
           {
             role: 'user',
@@ -136,8 +153,17 @@ module.exports = async (req, res) => {
     const groqData = await groqResponse.json();
     const result = JSON.parse(groqData.choices[0].message.content);
 
-    // Validation & Safety Net
+    // Validate verdict first
     if (!['Real', 'Fake', 'Uncertain'].includes(result.verdict)) result.verdict = 'Uncertain';
+
+    // Safety net: force confidenceScore into correct range
+    if (result.verdict === 'Fake' && result.confidenceScore > 35) {
+      result.confidenceScore = Math.floor(Math.random() * 21) + 10;
+    } else if (result.verdict === 'Uncertain' && (result.confidenceScore < 36 || result.confidenceScore > 64)) {
+      result.confidenceScore = Math.floor(Math.random() * 29) + 36;
+    } else if (result.verdict === 'Real' && result.confidenceScore < 65) {
+      result.confidenceScore = Math.floor(Math.random() * 26) + 70;
+    }
 
     // STEP 4: Save to Supabase
     await supabase.from('analyses').insert([{
