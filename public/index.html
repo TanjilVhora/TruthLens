@@ -7,7 +7,8 @@
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-  <!-- Ambient Effects -->
+
+  <!-- ── Ambient layers ── -->
   <div class="orb orb-1"></div>
   <div class="orb orb-2"></div>
   <div class="orb orb-3"></div>
@@ -15,7 +16,8 @@
   <canvas id="particles-canvas"></canvas>
 
   <div class="page-wrapper">
-    <!-- Navbar -->
+
+    <!-- ══ NAVBAR ══ -->
     <nav class="navbar">
       <a href="index.html" class="nav-logo">
         <div class="logo-icon">🔍</div>
@@ -28,16 +30,24 @@
       </div>
     </nav>
 
-    <!-- Hero -->
-    <section class="hero fade-up">
-      <div class="holo-badge">AI-Powered Detection</div>
-      <h1 class="hero-title">Truth<br>Lens</h1>
-      <p class="hero-subtitle">
-        Instant AI-powered fake news detection. Paste any article and get a verdict, confidence score, and detailed breakdown — in seconds.
+    <!-- ══ HERO ══ -->
+    <section class="hero">
+      <div class="hero-eyebrow fade-up">
+        <div class="holo-badge">AI-Powered · Groq Engine</div>
+      </div>
+
+      <h1 class="hero-title fade-up">
+        <span class="word-truth">Truth</span>
+        <span class="word-lens">Lens</span>
+      </h1>
+
+      <p class="hero-subtitle fade-up">
+        Paste any news article. Get an instant AI verdict — Real, Fake, or Uncertain — with a confidence score and full reasoning. Built to fight misinformation where it spreads.
       </p>
-      <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
+
+      <div class="hero-cta fade-up">
         <a href="analyze.html" class="btn-primary">
-          <span>⚡</span> Analyze Article
+          <span>⚡</span> Analyze an Article
         </a>
         <a href="history.html" class="btn-secondary">
           <span>🕐</span> View History
@@ -45,11 +55,11 @@
       </div>
     </section>
 
-    <!-- Global Stats Banner -->
-    <div class="stats-banner glass-card" style="max-width:900px;margin:0 auto 60px;">
+    <!-- ══ GLOBAL STATS BANNER ══ -->
+    <div class="stats-banner glass-card fade-up">
       <div class="holo-grid"></div>
       <div class="stats-banner-title">Live Global Stats</div>
-      <div class="stats-grid" id="stats-grid">
+      <div class="stats-grid">
         <div class="stat-cell total fade-up">
           <div class="stat-number" id="stat-total">—</div>
           <div class="stat-label">Total Analyzed</div>
@@ -69,95 +79,118 @@
       </div>
     </div>
 
-    <!-- Features -->
+    <!-- ══ FEATURES ══ -->
     <section class="features">
-      <div style="margin-bottom:40px;">
+      <div style="margin-bottom:44px;">
         <div class="section-label">What You Get</div>
-        <h2 class="section-title">Everything you need to spot misinformation</h2>
+        <h2 class="section-title">Everything to expose<br>misinformation</h2>
       </div>
+
       <div class="features-grid">
         <div class="feature-card glass-card fade-up">
           <span class="feature-icon">🎯</span>
           <div class="feature-title">Verdict + Confidence Score</div>
-          <div class="feature-desc">Get a clear Real / Fake / Uncertain verdict with a 0–100% confidence score backed by AI analysis.</div>
+          <div class="feature-desc">Clear Real / Fake / Uncertain verdict with a 0–100% confidence score from our AI analysis engine.</div>
         </div>
         <div class="feature-card glass-card fade-up">
           <span class="feature-icon">🔬</span>
           <div class="feature-title">Reason Breakdown</div>
-          <div class="feature-desc">Understand why — sensational language, missing sources, logical fallacies, and more explained clearly.</div>
+          <div class="feature-desc">Know exactly why — sensational language, missing sources, logical fallacies, all explained clearly.</div>
         </div>
         <div class="feature-card glass-card fade-up">
           <span class="feature-icon">📊</span>
           <div class="feature-title">Credibility Meter</div>
-          <div class="feature-desc">Visual colored gauge showing exactly how credible the article is at a glance — green, yellow, or red.</div>
+          <div class="feature-desc">A visual gauge shows article credibility at a glance — green for real, red for fake, yellow for uncertain.</div>
         </div>
         <div class="feature-card glass-card fade-up">
           <span class="feature-icon">📜</span>
           <div class="feature-title">Analysis History</div>
-          <div class="feature-desc">All your past analyses saved and accessible — track your fact-checking activity over time.</div>
+          <div class="feature-desc">Every fact-check you run is saved to your personal history — searchable, sortable, always accessible.</div>
         </div>
         <div class="feature-card glass-card fade-up">
           <span class="feature-icon">📤</span>
           <div class="feature-title">Share Results</div>
-          <div class="feature-desc">Download your result as an image and share directly to WhatsApp, Facebook, or any platform.</div>
+          <div class="feature-desc">Download your result as a crisp image and share directly to WhatsApp or any social platform.</div>
         </div>
         <div class="feature-card glass-card fade-up">
           <span class="feature-icon">🌐</span>
-          <div class="feature-title">Global Stats</div>
-          <div class="feature-desc">Live counter showing total articles analyzed worldwide and the global fake news percentage.</div>
+          <div class="feature-title">Global Intelligence</div>
+          <div class="feature-desc">Live worldwide counter — see how many articles have been checked and the global fake news rate.</div>
         </div>
       </div>
     </section>
 
-    <!-- Footer -->
-    <footer class="footer">
-      Built for OceanLab × CHARUSAT Hacks 2026 &nbsp;·&nbsp;
-      <a href="analyze.html">Start Analyzing</a>
-    </footer>
-  </div>
+    <!-- ══ BOTTOM CTA ══ -->
+    <div style="text-align:center; padding: 0 40px 80px;">
+      <div style="max-width:520px; margin:0 auto;" class="fade-up">
+        <div style="font-size:0.68rem;font-weight:500;letter-spacing:3px;text-transform:uppercase;color:var(--text-muted);font-family:'DM Mono',monospace;margin-bottom:14px;">Ready to check?</div>
+        <h3 style="font-family:'Playfair Display',serif;font-size:clamp(1.6rem,4vw,2.2rem);font-weight:800;color:var(--cream);margin-bottom:20px;line-height:1.2;">Don't believe everything<br>you read</h3>
+        <p style="color:var(--text-secondary);font-size:0.92rem;font-weight:300;line-height:1.7;margin-bottom:28px;">Built for India's WhatsApp generation — where misinformation spreads before truth can put on its shoes.</p>
+        <a href="analyze.html" class="btn-primary">Start Fact-Checking Now →</a>
+      </div>
+    </div>
 
+    <!-- ══ FOOTER ══ -->
+    <footer class="footer">
+      TruthLens &nbsp;·&nbsp; OceanLab × CHARUSAT Hacks 2026 &nbsp;·&nbsp;
+      <a href="analyze.html">Analyze</a> &nbsp;·&nbsp;
+      <a href="history.html">History</a>
+    </footer>
+
+  </div><!-- /.page-wrapper -->
+
+  <!-- ══ SCRIPTS ══ -->
   <script src="js/stats.js"></script>
   <script>
-    // Particle system
-    const canvas = document.getElementById('particles-canvas');
-    const ctx = canvas.getContext('2d');
-    let particles = [];
+    /* ── Particle system ── */
+    (function() {
+      const canvas = document.getElementById('particles-canvas');
+      const ctx    = canvas.getContext('2d');
+      let W, H, pts = [];
 
-    function resize() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    }
-    resize();
-    window.addEventListener('resize', resize);
+      function resize() {
+        W = canvas.width  = window.innerWidth;
+        H = canvas.height = window.innerHeight;
+      }
+      resize();
+      window.addEventListener('resize', resize);
 
-    for (let i = 0; i < 60; i++) {
-      particles.push({
-        x: Math.random() * window.innerWidth,
-        y: Math.random() * window.innerHeight,
-        r: Math.random() * 1.5 + 0.3,
-        vx: (Math.random() - 0.5) * 0.3,
-        vy: (Math.random() - 0.5) * 0.3,
-        alpha: Math.random() * 0.4 + 0.1,
-        hue: Math.random() > 0.5 ? 200 : 260,
-      });
-    }
+      /* Earthy particle colours */
+      const hues = [
+        'rgba(200,219,190,',  // sage
+        'rgba(237,228,224,',  // cream
+        'rgba(159,135,114,',  // taupe
+        'rgba(194,123,94,',   // terracotta
+      ];
 
-    function drawParticles() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      particles.forEach(p => {
-        p.x += p.vx; p.y += p.vy;
-        if (p.x < 0) p.x = canvas.width;
-        if (p.x > canvas.width) p.x = 0;
-        if (p.y < 0) p.y = canvas.height;
-        if (p.y > canvas.height) p.y = 0;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `hsla(${p.hue}, 100%, 70%, ${p.alpha})`;
-        ctx.fill();
-      });
-      requestAnimationFrame(drawParticles);
-    }
-    drawParticles();
+      for (let i = 0; i < 55; i++) {
+        pts.push({
+          x:     Math.random() * window.innerWidth,
+          y:     Math.random() * window.innerHeight,
+          r:     Math.random() * 1.4 + 0.3,
+          vx:    (Math.random() - 0.5) * 0.28,
+          vy:    (Math.random() - 0.5) * 0.28,
+          alpha: Math.random() * 0.35 + 0.06,
+          col:   hues[Math.floor(Math.random() * hues.length)],
+        });
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, W, H);
+        pts.forEach(p => {
+          p.x += p.vx; p.y += p.vy;
+          if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+          if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fillStyle = p.col + p.alpha + ')';
+          ctx.fill();
+        });
+        requestAnimationFrame(draw);
+      }
+      draw();
+    })();
   </script>
+
 </body>
 </html>

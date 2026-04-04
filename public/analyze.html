@@ -7,23 +7,24 @@
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
+
   <div class="orb orb-1"></div>
   <div class="orb orb-2"></div>
   <div class="scan-line"></div>
   <canvas id="particles-canvas"></canvas>
 
-  <!-- Loading Overlay -->
+  <!-- ══ LOADING OVERLAY ══ -->
   <div class="loading-overlay" id="loading-overlay">
     <div class="loading-ring">
       <div class="loading-dot"></div>
     </div>
-    <div class="loading-text" id="loading-text">Analyzing article...</div>
-    <div style="font-size:0.75rem;color:var(--text-dim);font-family:'Space Mono',monospace;text-align:center;max-width:260px;line-height:1.6;">
-      Our AI is reading, cross-referencing, and evaluating the credibility of your article
-    </div>
+    <div class="loading-text" id="loading-text">Reading article...</div>
+    <div class="loading-hint">Our AI is cross-referencing claims and evaluating credibility signals</div>
   </div>
 
   <div class="page-wrapper">
+
+    <!-- ══ NAVBAR ══ -->
     <nav class="navbar">
       <a href="index.html" class="nav-logo">
         <div class="logo-icon">🔍</div>
@@ -36,170 +37,117 @@
       </div>
     </nav>
 
+    <!-- ══ MAIN ══ -->
     <div class="analyze-container">
+
       <div class="page-header fade-up">
-        <div class="holo-badge">AI Engine Active</div>
+        <div class="holo-badge">Groq AI Engine Active</div>
         <h1 class="page-title">Analyze Article</h1>
-        <p class="page-desc">Paste a full news article or upload a WhatsApp screenshot. Our AI will return a verdict in seconds.</p>
+        <p class="page-desc">Paste any news article or suspicious text below. Our AI returns a verdict, confidence score, and full reasoning — usually in under 5 seconds.</p>
       </div>
 
+      <!-- ── Form Card ── -->
       <div class="glass-card fade-up">
         <div class="holo-grid"></div>
         <div class="analyze-form">
 
-          <!-- Input Type Toggle -->
-          <div style="display:flex;gap:10px;margin-bottom:20px;">
-            <button id="tab-text" onclick="switchTab('text')" style="flex:1;padding:10px;border-radius:8px;border:1px solid rgba(99,179,237,0.4);background:rgba(99,179,237,0.15);color:#63b3ed;font-size:0.82rem;font-family:'Space Mono',monospace;cursor:pointer;letter-spacing:1px;font-weight:700;">
-              📝 TEXT
-            </button>
-            <button id="tab-image" onclick="switchTab('image')" style="flex:1;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:var(--text-dim);font-size:0.82rem;font-family:'Space Mono',monospace;cursor:pointer;letter-spacing:1px;font-weight:700;">
-              📷 IMAGE
-            </button>
-          </div>
-
-          <!-- Text Input -->
-          <div id="text-section" class="input-group">
-            <label class="input-label" for="article-input">Article Text</label>
+          <!-- Label + Textarea -->
+          <div style="margin-bottom:22px;">
+            <label class="input-label" for="article-input">Paste Article Text</label>
             <textarea
               class="article-textarea"
               id="article-input"
-              placeholder="Paste the news article or any suspicious text here...&#10;&#10;Tip: The more text you provide, the more accurate the analysis will be."
+              placeholder="Paste the full news article or any text you want to fact-check here…&#10;&#10;Tip: Include the headline for higher accuracy."
               spellcheck="false"
             ></textarea>
-            <div class="char-counter"><span id="char-count">0</span> characters</div>
-          </div>
-
-          <!-- Image Upload Section -->
-          <div id="image-section" class="input-group" style="display:none;">
-            <label class="input-label">Upload Screenshot</label>
-
-            <!-- Hidden file input -->
-            <input type="file" id="image-input" accept="image/*" style="display:none;" />
-
-            <!-- Upload area -->
-            <div id="upload-area" onclick="document.getElementById('image-input').click()" style="border:2px dashed rgba(99,179,237,0.3);border-radius:12px;padding:40px 20px;text-align:center;cursor:pointer;transition:border-color 0.2s;background:rgba(99,179,237,0.03);">
-              <div style="font-size:2.5rem;margin-bottom:10px;">📷</div>
-              <div style="color:var(--text-secondary);font-size:0.9rem;margin-bottom:6px;">Click to upload a WhatsApp screenshot</div>
-              <div style="color:var(--text-dim);font-size:0.75rem;font-family:'Space Mono',monospace;">JPG, PNG, WEBP — max 5MB</div>
-            </div>
-
-            <!-- Image preview (hidden until image selected) -->
-            <div id="image-preview" style="display:none;margin-top:14px;position:relative;">
-              <img id="preview-img" style="width:100%;max-height:300px;object-fit:contain;border-radius:10px;border:1px solid rgba(255,255,255,0.1);" />
-              <button id="clear-image-btn" onclick="clearImage()" style="position:absolute;top:8px;right:8px;background:rgba(239,68,68,0.8);border:none;border-radius:6px;color:white;padding:4px 10px;cursor:pointer;font-size:0.8rem;">✕ Remove</button>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+              <span style="font-size:0.68rem;color:var(--text-muted);font-family:'DM Mono',monospace;">Minimum 30 characters</span>
+              <span class="char-counter"><span id="char-count">0</span> chars</span>
             </div>
           </div>
 
-          <!-- Error message -->
-          <div id="error-msg" style="display:none;margin-bottom:18px;padding:12px 16px;border-radius:10px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#fca5a5;font-size:0.875rem;align-items:center;gap:8px;">
+          <!-- Inline error -->
+          <div class="error-box" id="error-box">
             <span>⚠️</span>
-            <span id="error-text">Please enter some article text to analyze.</span>
+            <span id="error-text">Please enter article text to analyze.</span>
           </div>
 
-          <!-- Submit Button -->
+          <!-- ── THE BUTTON ── -->
           <button class="btn-analyze" id="submit-btn" onclick="handleSubmit()">
             <div class="cooldown-bar" id="cooldown-bar"></div>
-            <span class="btn-text" id="btn-text">⚡ Analyze for Truth</span>
+            <span class="btn-text" id="btn-text">
+              <span>⚡</span> Analyze for Truth
+            </span>
           </button>
 
-          <div style="display:flex;align-items:center;gap:12px;margin-top:18px;justify-content:center;">
-            <span style="font-size:0.72rem;color:var(--text-dim);font-family:'Space Mono',monospace;letter-spacing:1px;">POWERED BY GROQ + GEMINI AI</span>
-            <span style="width:4px;height:4px;border-radius:50%;background:var(--text-dim);display:inline-block;"></span>
-            <span style="font-size:0.72rem;color:var(--text-dim);font-family:'Space Mono',monospace;letter-spacing:1px;">RESULTS IN ~3 SECONDS</span>
+          <!-- Meta row -->
+          <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-top:18px;flex-wrap:wrap;">
+            <span style="display:flex;align-items:center;gap:6px;font-size:0.67rem;color:var(--text-muted);font-family:'DM Mono',monospace;letter-spacing:1px;">
+              <span style="width:5px;height:5px;border-radius:50%;background:var(--sage);box-shadow:0 0 5px var(--sage);display:inline-block;"></span>
+              POWERED BY GROQ
+            </span>
+            <span style="width:1px;height:12px;background:var(--border-dim);"></span>
+            <span style="font-size:0.67rem;color:var(--text-muted);font-family:'DM Mono',monospace;letter-spacing:1px;">RESULTS IN ~3 SECONDS</span>
+            <span style="width:1px;height:12px;background:var(--border-dim);"></span>
+            <span style="font-size:0.67rem;color:var(--text-muted);font-family:'DM Mono',monospace;letter-spacing:1px;">NO DATA STORED</span>
+          </div>
+
+        </div><!-- /.analyze-form -->
+      </div><!-- /.glass-card -->
+
+      <!-- ── Tips card ── -->
+      <div style="margin-top:18px;padding:20px 24px;background:rgba(200,219,190,0.04);border:1px solid var(--border-dim);border-radius:var(--radius-lg);" class="fade-up">
+        <div style="font-size:0.67rem;font-weight:500;letter-spacing:2.5px;color:var(--text-muted);font-family:'DM Mono',monospace;margin-bottom:14px;text-transform:uppercase;">Tips for Best Results</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;">
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="font-size:1rem;flex-shrink:0;">📋</span>
+            <span style="font-size:0.84rem;color:var(--text-secondary);line-height:1.6;font-weight:300;">Include the headline and full article body for best accuracy</span>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="font-size:1rem;flex-shrink:0;">🔤</span>
+            <span style="font-size:0.84rem;color:var(--text-secondary);line-height:1.6;font-weight:300;">Works in any language — Hindi, Gujarati, English, and more</span>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="font-size:1rem;flex-shrink:0;">📱</span>
+            <span style="font-size:0.84rem;color:var(--text-secondary);line-height:1.6;font-weight:300;">Copy text from WhatsApp forwarded messages and paste here</span>
           </div>
         </div>
       </div>
 
-      <!-- Tips Card -->
-      <div class="glass-card-inner fade-up" style="padding:20px 24px;margin-top:20px;background:rgba(0,100,200,0.06);">
-        <div style="font-size:0.72rem;font-weight:700;letter-spacing:2px;color:var(--text-dim);font-family:'Space Mono',monospace;margin-bottom:14px;">TIPS FOR BEST RESULTS</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">
-          <div style="display:flex;align-items:flex-start;gap:10px;">
-            <span style="font-size:1rem;">📋</span>
-            <span style="font-size:0.82rem;color:var(--text-secondary);line-height:1.5;">Paste the full article text including the headline for better accuracy</span>
-          </div>
-          <div style="display:flex;align-items:flex-start;gap:10px;">
-            <span style="font-size:1rem;">📷</span>
-            <span style="font-size:0.82rem;color:var(--text-secondary);line-height:1.5;">Upload clear WhatsApp screenshots for image analysis</span>
-          </div>
-          <div style="display:flex;align-items:flex-start;gap:10px;">
-            <span style="font-size:1rem;">🌐</span>
-            <span style="font-size:0.82rem;color:var(--text-secondary);line-height:1.5;">Works with articles in any language</span>
-          </div>
-        </div>
-      </div>
-    </div>
+    </div><!-- /.analyze-container -->
 
     <footer class="footer">
       TruthLens &nbsp;·&nbsp; OceanLab × CHARUSAT Hacks 2026
     </footer>
-  </div>
+
+  </div><!-- /.page-wrapper -->
 
   <script src="js/analyze.js"></script>
   <script>
-    // Tab switcher
-    function switchTab(type) {
-      const textSection = document.getElementById('text-section');
-      const imageSection = document.getElementById('image-section');
-      const tabText = document.getElementById('tab-text');
-      const tabImage = document.getElementById('tab-image');
-
-      if (type === 'text') {
-        textSection.style.display = 'block';
-        imageSection.style.display = 'none';
-        tabText.style.background = 'rgba(99,179,237,0.15)';
-        tabText.style.borderColor = 'rgba(99,179,237,0.4)';
-        tabText.style.color = '#63b3ed';
-        tabImage.style.background = 'transparent';
-        tabImage.style.borderColor = 'rgba(255,255,255,0.1)';
-        tabImage.style.color = 'var(--text-dim)';
-        // Reset image state
-        if (typeof clearImage === 'function') clearImage();
-      } else {
-        textSection.style.display = 'none';
-        imageSection.style.display = 'block';
-        tabImage.style.background = 'rgba(99,179,237,0.15)';
-        tabImage.style.borderColor = 'rgba(99,179,237,0.4)';
-        tabImage.style.color = '#63b3ed';
-        tabText.style.background = 'transparent';
-        tabText.style.borderColor = 'rgba(255,255,255,0.1)';
-        tabText.style.color = 'var(--text-dim)';
+    /* ── Particle canvas ── */
+    (function() {
+      const canvas = document.getElementById('particles-canvas');
+      const ctx = canvas.getContext('2d');
+      let W, H, pts = [];
+      function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+      resize(); window.addEventListener('resize', resize);
+      const cols = ['rgba(200,219,190,','rgba(237,228,224,','rgba(159,135,114,'];
+      for (let i = 0; i < 38; i++) {
+        pts.push({ x:Math.random()*window.innerWidth, y:Math.random()*window.innerHeight, r:Math.random()*1.2+0.3, vx:(Math.random()-0.5)*0.22, vy:(Math.random()-0.5)*0.22, alpha:Math.random()*0.28+0.05, col:cols[Math.floor(Math.random()*cols.length)] });
       }
-    }
+      function draw() {
+        ctx.clearRect(0,0,W,H);
+        pts.forEach(p => { p.x+=p.vx; p.y+=p.vy; if(p.x<0)p.x=W; if(p.x>W)p.x=0; if(p.y<0)p.y=H; if(p.y>H)p.y=0; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fillStyle=p.col+p.alpha+')'; ctx.fill(); });
+        requestAnimationFrame(draw);
+      }
+      draw();
+    })();
 
-    // Particles
-    const canvas = document.getElementById('particles-canvas');
-    const ctx = canvas.getContext('2d');
-    let particles = [];
-    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-    resize();
-    window.addEventListener('resize', resize);
-    for (let i = 0; i < 40; i++) {
-      particles.push({
-        x: Math.random() * window.innerWidth, y: Math.random() * window.innerHeight,
-        r: Math.random() * 1.2 + 0.3, vx: (Math.random() - 0.5) * 0.25, vy: (Math.random() - 0.5) * 0.25,
-        alpha: Math.random() * 0.3 + 0.05, hue: 200 + Math.random() * 60,
-      });
-    }
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      particles.forEach(p => {
-        p.x += p.vx; p.y += p.vy;
-        if (p.x < 0) p.x = canvas.width; if (p.x > canvas.width) p.x = 0;
-        if (p.y < 0) p.y = canvas.height; if (p.y > canvas.height) p.y = 0;
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `hsla(${p.hue}, 100%, 70%, ${p.alpha})`; ctx.fill();
-      });
-      requestAnimationFrame(draw);
-    }
-    draw();
-
-    // Char counter
+    /* ── Character counter ── */
     const textarea = document.getElementById('article-input');
-    const charCount = document.getElementById('char-count');
-    textarea.addEventListener('input', () => {
-      charCount.textContent = textarea.value.length;
-    });
+    const charEl   = document.getElementById('char-count');
+    textarea.addEventListener('input', () => { charEl.textContent = textarea.value.length; });
   </script>
+
 </body>
 </html>

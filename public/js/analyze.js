@@ -1,202 +1,160 @@
 // public/js/analyze.js
-// Handles article submission, image upload, 3-second cooldown, loading state, API call, and redirect to result.html
+// Handles article submission, 3-second cooldown, loading overlay,
+// API call to /api/analyze, localStorage save, and redirect to result.html.
+//
+// ✅ FIX: userId is now sent with every analyze request so the backend
+//         can save it to Supabase and history.js can retrieve it later.
 
+/* ── Constants ── */
 const COOLDOWN_MS = 3000;
+const USER_ID_KEY = 'tl_user_id';
+
+/* ── State ── */
 let isCoolingDown = false;
-let selectedImageBase64 = null;
-let selectedInputType = 'text';
 
-// ─── IMAGE UPLOAD HANDLER ─────────────────────────────────────────────────────
-function handleImageUpload(event) {
-  const file = event.target.files[0];
-  if (!file) return;
+/* ── Helpers ── */
 
-  // Validate file type
-  if (!file.type.startsWith('image/')) {
-    alert('Please select a valid image file.');
-    return;
+/**
+ * Generate or reuse a simple persistent browser userId.
+ * Same function used in history.js so IDs always match.
+ */
+function getUserId() {
+  let userId = localStorage.getItem(USER_ID_KEY);
+  if (!userId) {
+    userId = 'u_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+    localStorage.setItem(USER_ID_KEY, userId);
   }
-
-  // Validate file size (max 5MB)
-  if (file.size > 5 * 1024 * 1024) {
-    alert('Image size must be less than 5MB.');
-    return;
-  }
-
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    // Strip the data:image/jpeg;base64, prefix — only send raw base64
-    const base64String = e.target.result.split(',')[1];
-    selectedImageBase64 = base64String;
-    selectedInputType = 'image';
-
-    // Show image preview if element exists
-    const preview = document.getElementById('image-preview');
-    const previewImg = document.getElementById('preview-img');
-    const imageLabel = document.getElementById('image-label');
-
-    if (preview && previewImg) {
-      previewImg.src = e.target.result;
-      preview.style.display = 'block';
-    }
-
-    if (imageLabel) {
-      imageLabel.textContent = `✅ ${file.name}`;
-    }
-
-    // Clear textarea when image is selected
-    const textarea = document.getElementById('article-input');
-    if (textarea) textarea.value = '';
-  };
-
-  reader.readAsDataURL(file);
+  return userId;
 }
 
-// ─── CLEAR IMAGE ──────────────────────────────────────────────────────────────
-function clearImage() {
-  selectedImageBase64 = null;
-  selectedInputType = 'text';
-
-  const fileInput = document.getElementById('image-input');
-  if (fileInput) fileInput.value = '';
-
-  const preview = document.getElementById('image-preview');
-  if (preview) preview.style.display = 'none';
-
-  const imageLabel = document.getElementById('image-label');
-  if (imageLabel) imageLabel.textContent = '📷 Upload Image';
+/**
+ * Show the inline error box with a message.
+ */
+function showError(msg) {
+  const box  = document.getElementById('error-box');
+  const text = document.getElementById('error-text');
+  text.textContent = msg;
+  box.classList.add('visible');
 }
 
-// ─── MAIN SUBMIT HANDLER ──────────────────────────────────────────────────────
+/**
+ * Hide the inline error box.
+ */
+function hideError() {
+  document.getElementById('error-box').classList.remove('visible');
+}
+
+/* ── Main submit handler ── */
 async function handleSubmit() {
-  const textarea = document.getElementById('article-input');
-  const btn = document.getElementById('submit-btn');
-  const btnText = document.getElementById('btn-text');
-  const errorMsg = document.getElementById('error-msg');
-  const errorText = document.getElementById('error-text');
-  const cooldownBar = document.getElementById('cooldown-bar');
+  const textarea  = document.getElementById('article-input');
+  const btn       = document.getElementById('submit-btn');
+  const btnText   = document.getElementById('btn-text');
+  const coolBar   = document.getElementById('cooldown-bar');
+  const overlay   = document.getElementById('loading-overlay');
+  const loadText  = document.getElementById('loading-text');
 
-  // Hide previous errors
-  errorMsg.style.display = 'none';
-
-  const articleText = textarea ? textarea.value.trim() : '';
-
-  // Validate — must have either text or image
-  if (selectedInputType === 'image') {
-    if (!selectedImageBase64) {
-      errorMsg.style.display = 'flex';
-      errorText.textContent = 'Please select an image to analyze.';
-      return;
-    }
-  } else {
-    if (!articleText) {
-      errorMsg.style.display = 'flex';
-      errorText.textContent = 'Please enter some article text to analyze.';
-      if (textarea) textarea.focus();
-      return;
-    }
-    if (articleText.length < 30) {
-      errorMsg.style.display = 'flex';
-      errorText.textContent = 'Please enter at least 30 characters for a meaningful analysis.';
-      if (textarea) textarea.focus();
-      return;
-    }
-  }
-
-  // Block if cooling down
+  // Block if already in cooldown
   if (isCoolingDown) return;
 
-  // Start cooldown
-  isCoolingDown = true;
-  btn.disabled = true;
-  btnText.textContent = '⏳ Please wait...';
+  hideError();
 
-  // Animate cooldown bar
-  if (cooldownBar) {
-    cooldownBar.style.transition = 'none';
-    cooldownBar.style.width = '100%';
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        cooldownBar.style.transition = `width ${COOLDOWN_MS}ms linear`;
-        cooldownBar.style.width = '0%';
-      });
-    });
+  // ── Validate input ──
+  const articleText = textarea.value.trim();
+
+  if (!articleText) {
+    showError('Please paste some article text before analyzing.');
+    textarea.focus();
+    return;
   }
 
-  // Show loading overlay
-  const loadingOverlay = document.getElementById('loading-overlay');
-  if (loadingOverlay) loadingOverlay.classList.add('active');
+  if (articleText.length < 30) {
+    showError('Please enter at least 30 characters for a meaningful analysis.');
+    textarea.focus();
+    return;
+  }
 
-  // Rotate loading messages
-  const loadingMessages = selectedInputType === 'image'
-    ? ['Reading image...', 'Extracting text...', 'Cross-referencing...', 'Computing verdict...']
-    : ['Reading article...', 'Detecting patterns...', 'Cross-referencing...', 'Computing verdict...'];
+  // ── Start 3-second cooldown ──
+  isCoolingDown = true;
+  btn.disabled  = true;
+  btnText.innerHTML = '<span>⏳</span> Please wait…';
 
+  // Animate cooldown bar draining left to right then disappearing
+  coolBar.style.transition = 'none';
+  coolBar.style.width      = '100%';
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      coolBar.style.transition = `width ${COOLDOWN_MS}ms linear`;
+      coolBar.style.width      = '0%';
+    });
+  });
+
+  // Schedule re-enable after cooldown regardless of request outcome
+  const cooldownTimeout = setTimeout(() => {
+    isCoolingDown = false;
+    btn.disabled  = false;
+    btnText.innerHTML = '<span>⚡</span> Analyze for Truth';
+    coolBar.style.transition = 'none';
+    coolBar.style.width      = '0%';
+  }, COOLDOWN_MS);
+
+  // ── Show loading overlay ──
+  overlay.classList.add('active');
+
+  // Rotate loading messages every 1.3 s
+  const loadingMessages = [
+    'Reading article…',
+    'Detecting patterns…',
+    'Cross-referencing claims…',
+    'Computing verdict…',
+    'Almost there…',
+  ];
   let msgIdx = 0;
   const msgInterval = setInterval(() => {
     msgIdx++;
-    const el = document.getElementById('loading-text');
-    if (el) el.textContent = loadingMessages[msgIdx % loadingMessages.length];
-  }, 1200);
+    if (loadText) loadText.textContent = loadingMessages[msgIdx % loadingMessages.length];
+  }, 1300);
 
   try {
-    // Build request body based on input type
-    const requestBody = selectedInputType === 'image'
-      ? { imageBase64: selectedImageBase64, inputType: 'image' }
-      : { articleText, inputType: 'text' };
-
+    // ── POST to backend ──
     const response = await fetch('/api/analyze', {
-      method: 'POST',
+      method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody),
+      body:    JSON.stringify({
+        articleText,
+        userId: getUserId(), // ✅ send userId so backend saves to Supabase
+      }),
     });
 
     if (!response.ok) {
       const errData = await response.json().catch(() => ({}));
-      throw new Error(errData.error || `Server error: ${response.status}`);
+      throw new Error(errData.error || `Server error (${response.status}). Please try again.`);
     }
 
     const result = await response.json();
 
-    // Validate response shape
+    // ── Validate response shape ──
     const validVerdicts = ['Real', 'Fake', 'Uncertain'];
     if (!result.verdict || !validVerdicts.includes(result.verdict)) {
-      throw new Error('Invalid response from server. Please try again.');
+      throw new Error('Unexpected response from AI. Please try again.');
+    }
+    if (typeof result.confidenceScore !== 'number') {
+      throw new Error('Invalid confidence score in response. Please try again.');
     }
 
-    // Save result to localStorage
+    // ── Save to localStorage and redirect ──
     localStorage.setItem('tl_result', JSON.stringify(result));
-
-    // Redirect to result page
     window.location.href = 'result.html';
 
   } catch (err) {
-    if (loadingOverlay) loadingOverlay.classList.remove('active');
-
-    errorMsg.style.display = 'flex';
-    errorText.textContent = err.message || 'Something went wrong. Please try again.';
-
+    // Hide overlay on error, show message
+    overlay.classList.remove('active');
+    clearInterval(msgInterval);
+    showError(err.message || 'Something went wrong. Please try again.');
     console.error('[TruthLens] Analyze error:', err);
   } finally {
+    // Always stop message rotation
     clearInterval(msgInterval);
-
-    setTimeout(() => {
-      isCoolingDown = false;
-      btn.disabled = false;
-      btnText.textContent = '⚡ Analyze for Truth';
-      if (cooldownBar) {
-        cooldownBar.style.transition = 'none';
-        cooldownBar.style.width = '0%';
-      }
-    }, COOLDOWN_MS);
+    // Overlay hides on redirect or error above — nothing more needed here
   }
 }
-
-// ─── EVENT LISTENERS ──────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  const imageInput = document.getElementById('image-input');
-  if (imageInput) imageInput.addEventListener('change', handleImageUpload);
-
-  const clearBtn = document.getElementById('clear-image-btn');
-  if (clearBtn) clearBtn.addEventListener('click', clearImage);
-});

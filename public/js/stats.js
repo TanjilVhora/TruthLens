@@ -1,47 +1,50 @@
 // public/js/stats.js
-// Fetches global stats from /api/stats and animates number display
+// Fetches global stats from GET /api/stats and animates
+// number counters with an ease-out-cubic animation.
 
-function animateNumber(el, target, duration = 1200) {
-  if (!el) return;
-  const start = 0;
-  const startTime = performance.now();
-  function update(currentTime) {
-    const elapsed = currentTime - startTime;
-    const progress = Math.min(elapsed / duration, 1);
-    // Ease out cubic
-    const eased = 1 - Math.pow(1 - progress, 3);
-    const current = Math.round(start + (target - start) * eased);
-    el.textContent = current.toLocaleString('en-IN');
-    if (progress < 1) requestAnimationFrame(update);
+/**
+ * Animate a number from 0 to `target` over `duration` ms.
+ * Uses ease-out-cubic easing for a natural deceleration.
+ */
+function animateNumber(el, target, duration = 1300) {
+  if (!el || typeof target !== 'number') {
+    if (el) el.textContent = target !== undefined ? target.toLocaleString('en-IN') : '—';
+    return;
   }
-  requestAnimationFrame(update);
+
+  const startTime = performance.now();
+
+  function tick(now) {
+    const elapsed  = now - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    // Ease-out cubic
+    const eased    = 1 - Math.pow(1 - progress, 3);
+    const current  = Math.round(target * eased);
+
+    el.textContent = current.toLocaleString('en-IN');
+
+    if (progress < 1) requestAnimationFrame(tick);
+  }
+
+  requestAnimationFrame(tick);
 }
 
 async function loadStats() {
   try {
     const response = await fetch('/api/stats');
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const stats = await response.json();
 
+    const stats = await response.json();
     const { totalAnalyses, fakeCount, realCount, uncertainCount } = stats;
 
-    const totalEl = document.getElementById('stat-total');
-    const fakeEl = document.getElementById('stat-fake');
-    const realEl = document.getElementById('stat-real');
-    const uncertainEl = document.getElementById('stat-uncertain');
-
-    if (totalEl) animateNumber(totalEl, totalAnalyses || 0);
-    if (fakeEl) animateNumber(fakeEl, fakeCount || 0);
-    if (realEl) animateNumber(realEl, realCount || 0);
-    if (uncertainEl) animateNumber(uncertainEl, uncertainCount || 0);
+    animateNumber(document.getElementById('stat-total'),     totalAnalyses  || 0);
+    animateNumber(document.getElementById('stat-fake'),      fakeCount      || 0);
+    animateNumber(document.getElementById('stat-real'),      realCount      || 0);
+    animateNumber(document.getElementById('stat-uncertain'), uncertainCount || 0);
 
   } catch (err) {
-    console.error('[TruthLens] Stats fetch error:', err);
-    // Show dashes on error — already the default state
-    ['stat-total', 'stat-fake', 'stat-real', 'stat-uncertain'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el && el.textContent === '—') el.textContent = '—';
-    });
+    console.error('[TruthLens] Stats error:', err);
+    // Leave dashes — already the default DOM state
   }
 }
 
