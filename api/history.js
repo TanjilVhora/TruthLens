@@ -11,11 +11,20 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { data, error } = await supabase
+    const { userId } = req.query;
+
+    let query = supabase
       .from('analyses')
       .select('id, created_at, article_text, verdict, confidence_score')
       .order('created_at', { ascending: false })
       .limit(20);
+
+    // Filter by userId if provided
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+
+    const { data, error } = await query;
 
     if (error) return res.status(500).json({ error: error.message });
 
