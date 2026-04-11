@@ -99,7 +99,7 @@ Create a `.env` file in the root directory:
 GROQ_API_KEY=your_groq_api_key
 GEMINI_API_KEY=your_gemini_api_key
 TAVILY_API_KEY=your_tavily_api_key
-SUPABASE_URL=https://supabase.com/dashboard/project/hqrefmvqhmmcfcvvrvwn
+SUPABASE_URL=//your-project.supabase.co
 SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
