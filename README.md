@@ -62,15 +62,27 @@ User Input (Text or Image)
 
 ```sql
 CREATE TABLE analyses (
-  id          UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  input_type  TEXT CHECK (input_type IN ('text', 'image')),
-  input_text  TEXT,
-  verdict     TEXT CHECK (verdict IN ('Real', 'Fake', 'Uncertain')),
-  confidence  INT,
-  reasons     TEXT[],
-  red_flags   TEXT[],
-  created_at  TIMESTAMP DEFAULT now()
+  id               BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  created_at       TIMESTAMPTZ DEFAULT now(),
+  user_id          TEXT,
+  article_text     TEXT NOT NULL,
+  verdict          TEXT NOT NULL,
+  confidence_score INT4 NOT NULL,
+  reasons          TEXT[] NOT NULL,
+  red_flags        TEXT[],
+  input_type       TEXT NOT NULL
 );
+
+CREATE TABLE stats (
+  id               INT4 PRIMARY KEY,
+  total_analyses   INT4 DEFAULT 0,
+  fake_count       INT4 DEFAULT 0,
+  real_count       INT4 DEFAULT 0,
+  uncertain_count  INT4 DEFAULT 0
+);
+
+-- single row
+INSERT INTO stats (id) VALUES (1);
 ```
 
 ---
